@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>Say hello to x86_64 Assembly [part 4] &middot; 0xAX blog</title>
+
+  
+  <link rel="stylesheet" href="http://0xax.github.io//css/poole.css">
+  <link rel="stylesheet" href="http://0xax.github.io//css/hyde.css">
+  <link rel="stylesheet" href="http://0xax.github.io//css/poole-overrides.css">
+  <link rel="stylesheet" href="http://0xax.github.io//css/hyde-overrides.css">
+  <link rel="stylesheet" href="http://0xax.github.io//css/hyde-x.css">
+  <link rel="stylesheet" href="http://0xax.github.io//css/highlight/sunburst.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link href="/favicon.png" rel="icon">
+
+  
+  
+  
+  
+
+  <meta name="description" content="">
+  <meta name="keywords" content="assembly, programming, linux, emacs, kernel">
+  <link rel="author" href="http://plus.google.com/Your%20Google&#43;%20profile%20ID">
+</head>
+<body>
+<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      
+      <h1 style="font-family: sans-serif; margin-left: 5px;">0xAX blog</h1>
+      
+    </div>
+    <hr/>
+    <img src="/2699235.png" alt="Smiley face" height="100" width="100" align="left">
+    <label style="margin-top: 10px; top: 5px; margin-left: 3px; position: relative; left: 10px;">
+      Hi, I am Alex, better known as <labe style="color: white;">0xAX</label><label style="top: 6px; left: 9px;position: relative;">.</label>
+      <br/><br/>
+      Blog covers anything I find interesting, low-level programming, elixirlang and erlang programming,
+      and of course my favorite emacs.
+    </label>
+    <hr/>
+    <ul class="sidebar-nav">
+      
+    </ul>
+
+    <ul class="sidebar-nav">
+      <li class="sidebar-nav-item">
+      <a href="https://github.com/0xAX"><i class="fa fa-github-square fa-2x"></i></a>
+      <a href="https://www.linkedin.com/profile/view?id=86504113&amp;trk=hp-identity-photo"><i class="fa fa-linkedin-square fa-2x"></i></a>
+      <a href="https://plus.google.com/108105900187376829286/posts"><i class="fa fa-google-plus-square fa-2x"></i></a>
+      <a href="https://twitter.com/0xAX"><i class="fa fa-twitter-square fa-2x"></i></a>
+      <a href="http://stackoverflow.com/users/274299/0xax"><i class="fa fa-stack-overflow fa-2x"></i></a>
+      <a href="http://0xax.gitbooks.io/linux-insides/content/index.html"><i class="fa fa-linux fa-2x"></i></a>
+
+      </li>
+    </ul>
+  </div>
+</div>
+
+
+<div class="content container">
+  <div class="post">
+    <h1>Say hello to x86_64 Assembly [part 4]</h1>
+    <span class="post-date">Sep 1, 2014 &middot; 7 minute read &middot; <a href="http://0xax.github.io/blog/2014/09/01/say-hello-to-x86_64-assembly-part-4/#disqus_thread">Comments</a>
+    
+      <br/>
+
+      <div style="float:right;">
+        <a href="https://twitter.com/share" class="twitter-share-button" data-via="0xAX">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+	<script src="https://apis.google.com/js/platform.js" async defer></script>	
+	<div class="g-plusone" data-size="medium"></div>
+      </div>
+    
+    <a class="label" href="http://0xax.github.io//categories/development">Development</a><a class="label" href="http://0xax.github.io//categories/low-level">low-level</a><a class="label" href="http://0xax.github.io//categories/assembly">assembly</a>
+    </span>
+    
+
+<p>Some time ago i started to write series of blog posts about assembly programming for x86_64. You can find it by asm tag. Unfortunately i was busy last time and there were not new post, so today I continue to write posts about assembly, and will try to do it every week.</p>
+
+<p>Today we will look at strings and some strings operations. We still use nasm assembler, and linux x86_64.</p>
+
+<h2 id="reverse-string:8818a2798ab83370827e60243d76d259">Reverse string</h2>
+
+<p>Of course when we talk about assembly programming language we can&rsquo;t talk about string data type, actually we&rsquo;re dealing with array of bytes. Let&rsquo;s try to write simple example, we will define string data and try to reverse and write result to stdout. This tasks seems pretty simple and popular when we start to learn new programming language. Let&rsquo;s look on implementation.</p>
+
+<p>First of all, I define initialized data. It will be placed in data section (You can read about sections in part):</p>
+
+<pre><code class="language-assembly">section .data
+		SYS_WRITE equ 1
+		STD_OUT   equ 1
+		SYS_EXIT  equ 60
+		EXIT_CODE equ 0
+ 
+		NEW_LINE db 0xa
+		INPUT db &quot;Hello world!&quot;
+</code></pre>
+
+<p>Here we can see four constants:</p>
+
+<ul>
+<li><code>SYS_WRITE</code> - &lsquo;write&rsquo; syscall number</li>
+<li><code>STD_OUT</code> - stdout file descriptor</li>
+<li><code>SYS_EXIT</code> - &lsquo;exit&rsquo; syscall number</li>
+<li><code>EXIT_CODE</code> - exit code</li>
+</ul>
+
+<p>syscall list you can find - here. Also there defined:</p>
+
+<ul>
+<li><code>NEW_LINE</code> - new line (\n) symbol</li>
+<li><code>INPUT</code> - our input string, which we will reverse</li>
+</ul>
+
+<p>Next we define bss section for our buffer, where we will put reversed string:</p>
+
+<pre><code class="language-assembly">section .bss
+		OUTPUT resb 12
+</code></pre>
+
+<p>Ok we have some data and buffer where to put result, now we can define text section for code. Let&rsquo;s start from main _start routine:</p>
+
+<pre><code class="language-assembly">_start:
+		mov rsi, INPUT
+		xor rcx, rcx
+		cld
+		mov rdi, $ + 15
+		call calculateStrLength
+		xor rax, rax
+		xor rdi, rdi
+		jmp reverseStr
+</code></pre>
+
+<p>Here are some new things. Let&rsquo;s see how it works: First of all we put INPUT address to si register at line 2, as we did for writing to stdout and write zeros to rcx register, it will be counter for calculating length of our string. At line 4 we can see cld operator. It resets df flag to zero. We need in it because when we will calculate length of string, we will go through symbols of this string, and if df flag will be 0, we will handle symbols of string from left to right. Next we call calculateStrLength function. I missed line 5 with mov rdi, $ + 15 instruction, i will tell about it little later. And now let&rsquo;s look at calculateStrLength implementation:</p>
+
+<pre><code class="language-assembly">calculateStrLength:
+		;; check is it end of string
+		cmp byte [rsi], 0
+		;; if yes exit from function
+		je exitFromRoutine
+		;; load byte from rsi to al and inc rsi
+		lodsb
+		;; push symbol to stack
+		push rax
+		;; increase counter
+		inc rcx
+		;; loop again
+		jmp calculateStrLength
+</code></pre>
+
+<p>As you can understand by it&rsquo;s name, it just calculates length of INPUT string and store result in rcx register. First of all we check that rsi register doesn&rsquo;t point to zero, if so this is the end of string and we can exit from function. Next is lodsb instruction. It&rsquo;s simple, it just put 1 byte to al register (low part of 16 bit ax) and changes rsi pointer. As we executed cld instruction, lodsb everytime will move rsi to one byte from left to right, so we will move by string symbols. After it we push rax value to stack, now it contains symbol from our string (lodsb puts byte from si to al, al is low 8 bit of rax). Why we did push symbol to stack? You must remember how stack works, it works by principle LIFO (last input, first output). It is very good for us. We will take first symbol from si, push it to stack, than second and so on. So there will be last symbol of string at the stack top. Than we just pop symbol by symbol from stack and write to OUTPUT buffer. After it we increment our counter (rcx) and loop again to the start of routine.</p>
+
+<p>Ok, we pushed all symbols from string to stack, now we can jump to exitFromRoutine return to _start there. How to do it? We have ret instruction for this. But if code will be like this:</p>
+
+<pre><code class="language-assembly">exitFromRoutine:
+		;; return to _start
+		ret
+</code></pre>
+
+<p>It will not work. Why? It is tricky. Remember we called calculateStrLength at _start. What occurs when we call a function? First of all function&rsquo;s parameters pushes to stack from right to left. After it return address pushes to stack. So function will know where to return after end of execution. But look at calculateStrLength, we pushed symbols from our string to stack and now there is no return address of stack top and function doesn&rsquo;t know where to return. How to be with it. Now we must take a look to the weird instruction before call:</p>
+
+<pre><code class="language-assembly">    mov rdi, $ + 15
+</code></pre>
+
+<p>First all:</p>
+
+<ul>
+<li><code>$</code> - returns position in memory of string where $ defined</li>
+<li><code>$$</code> - returns position in memory of current section start</li>
+</ul>
+
+<p>So we have position of mov rdi, $ + 15, but why we add 15 here? Look, we need to know position of next line after calculateStrLength. Let&rsquo;s open our file with objdump util:</p>
+
+<pre><code class="language-assembly">objdump -D reverse
+ 
+reverse:     file format elf64-x86-64
+ 
+Disassembly of section .text:
+ 
+00000000004000b0 &lt;_start&gt;:
+  4000b0:	48 be 41 01 60 00 00 	movabs $0x600141,%rsi
+  4000b7:	00 00 00 
+  4000ba:	48 31 c9             	xor    %rcx,%rcx
+  4000bd:	fc                   	cld    
+  4000be:	48 bf cd 00 40 00 00 	movabs $0x4000cd,%rdi
+  4000c5:	00 00 00 
+  4000c8:	e8 08 00 00 00       	callq  4000d5 &lt;calculateStrLength&gt;
+  4000cd:	48 31 c0             	xor    %rax,%rax
+  4000d0:	48 31 ff             	xor    %rdi,%rdi
+  4000d3:	eb 0e                	jmp    4000e3 &lt;reverseStr&gt;
+</code></pre>
+
+<p>We can see here that line 12 (our mov rdi, $ + 15) takes 10 bytes and function call at line 16 - 5 bytes, so it takes 15 bytes. That&rsquo;s why our return address will be mov rdi, $ + 15. Now we can push return address from rdi to stack and return from function:</p>
+
+<pre><code class="language-assembly">exitFromRoutine:
+		;; push return addres to stack again
+		push rdi
+		;; return to _start
+		ret
+</code></pre>
+
+<p>Now we return to start. After call of the <code>calculateStrLength</code> we write zeros to rax and rdi and jump to reverseStr label. It&rsquo;s implementation is following:</p>
+
+<pre><code class="language-assembly">reverseStr:
+		cmp rcx, 0
+		je printResult
+		pop rax
+		mov [OUTPUT + rdi], rax
+		dec rcx
+		inc rdi
+		jmp reverseStr
+</code></pre>
+
+<p>Here we check our counter which is length of string and if it is zero we wrote all symbols to buffer and can print it. After checking counter we pop from stack to rax register first symbol and write it to OUTPUT buffer. We add rdi because in other way we&rsquo;ll write symbol to first byte of buffer. After this we increase rdi for moving next by OUTPUT buffer, decrease length counter and jump to the start of label.</p>
+
+<p>After execution of reverseStr we have reversed string in OUTPUT buffer and can write result to stdout with new line:</p>
+
+<pre><code class="language-assembly">printResult:
+		mov rdx, rdi
+		mov rax, 1
+		mov rdi, 1
+		mov rsi, OUTPUT
+                syscall
+		jmp printNewLine
+ 
+printNewLine:
+		mov rax, SYS_WRITE
+		mov rdi, STD_OUT
+		mov rsi, NEW_LINE
+		mov rdx, 1
+		syscall
+		jmp exit
+</code></pre>
+
+<p>and exit from the our program:</p>
+
+<pre><code class="language-assembly">exit:
+		mov rax, SYS_EXIT
+		mov rdi, EXIT_CODE
+		syscall
+</code></pre>
+
+<p>That&rsquo;s all, now we can compile our program with:</p>
+
+<pre><code class="language-assembly">all:
+	nasm -g -f elf64 -o reverse.o reverse.asm
+	ld -o reverse reverse.o
+ 
+clean:
+	rm reverse reverse.o
+</code></pre>
+
+<p>and run it:</p>
+
+<p><img src="http://1.bp.blogspot.com/-PoIXmq_sbmU/VG3x4VvtFiI/AAAAAAAAAH4/z2DiEHcrBxs/s1600/Screenshot%2Bfrom%2B2014-11-20%2B19%3A51%3A15.png" alt="result" /></p>
+
+<h2 id="string-operations:8818a2798ab83370827e60243d76d259">String operations</h2>
+
+<p>Of course there are many other instructions for string/bytes manipulations:</p>
+
+<ul>
+<li><code>REP</code> - repeat while rcx is not zero</li>
+<li><code>MOVSB</code> - copy a string of bytes (MOVSW, MOVSD and etc..)</li>
+<li><code>CMPSB</code> - byte string comparison</li>
+<li><code>SCASB</code> - byte string scanning</li>
+<li><code>STOSB</code> - write byte to string</li>
+</ul>
+
+
+          <div style="float:left;">
+        <a href="https://twitter.com/share" class="twitter-share-button" data-via="0xAX">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+	<script src="https://apis.google.com/js/platform.js" async defer></script>	
+	<div class="g-plusone" data-size="medium"></div>
+      </div>
+    
+  </div>
+  <div id="disqus_thread" style="width: 180% !important;"></div>
+</div>
+<div style="width: 100%;">
+
+<script type="text/javascript">
+var disqus_shortname = "0xAX";
+(function () {
+    var s = document.createElement('script'); s.async = true;
+    s.type = 'text/javascript';
+    s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+    (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+
+
+
+<script type="text/javascript">
+    var disqus_shortname = "0xAX";
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<script src="http://0xax.github.io//js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+  var _gaq=[['_setAccount','UA-64079379-1'],['_trackPageview']];
+  (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+  g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+  s.parentNode.insertBefore(g,s)}(document,'script'));
+</script>
+
+</body>
+</html>
+
+</div>

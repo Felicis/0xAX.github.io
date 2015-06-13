@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>GHCi runtime linker found a duplicate definition error &middot; 0xAX blog</title>
+
+  
+  <link rel="stylesheet" href="http://0xax.github.io//css/poole.css">
+  <link rel="stylesheet" href="http://0xax.github.io//css/hyde.css">
+  <link rel="stylesheet" href="http://0xax.github.io//css/poole-overrides.css">
+  <link rel="stylesheet" href="http://0xax.github.io//css/hyde-overrides.css">
+  <link rel="stylesheet" href="http://0xax.github.io//css/hyde-x.css">
+  <link rel="stylesheet" href="http://0xax.github.io//css/highlight/sunburst.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link href="/favicon.png" rel="icon">
+
+  
+  
+  
+  
+
+  <meta name="description" content="">
+  <meta name="keywords" content="assembly, programming, linux, emacs, kernel">
+  <link rel="author" href="http://plus.google.com/Your%20Google&#43;%20profile%20ID">
+</head>
+<body>
+<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      
+      <h1 style="font-family: sans-serif; margin-left: 5px;">0xAX blog</h1>
+      
+    </div>
+    <hr/>
+    <img src="/2699235.png" alt="Smiley face" height="100" width="100" align="left">
+    <label style="margin-top: 10px; top: 5px; margin-left: 3px; position: relative; left: 10px;">
+      Hi, I am Alex, better known as <labe style="color: white;">0xAX</label><label style="top: 6px; left: 9px;position: relative;">.</label>
+      <br/><br/>
+      Blog covers anything I find interesting, low-level programming, elixirlang and erlang programming,
+      and of course my favorite emacs.
+    </label>
+    <hr/>
+    <ul class="sidebar-nav">
+      
+    </ul>
+
+    <ul class="sidebar-nav">
+      <li class="sidebar-nav-item">
+      <a href="https://github.com/0xAX"><i class="fa fa-github-square fa-2x"></i></a>
+      <a href="https://www.linkedin.com/profile/view?id=86504113&amp;trk=hp-identity-photo"><i class="fa fa-linkedin-square fa-2x"></i></a>
+      <a href="https://plus.google.com/108105900187376829286/posts"><i class="fa fa-google-plus-square fa-2x"></i></a>
+      <a href="https://twitter.com/0xAX"><i class="fa fa-twitter-square fa-2x"></i></a>
+      <a href="http://stackoverflow.com/users/274299/0xax"><i class="fa fa-stack-overflow fa-2x"></i></a>
+      <a href="http://0xax.gitbooks.io/linux-insides/content/index.html"><i class="fa fa-linux fa-2x"></i></a>
+
+      </li>
+    </ul>
+  </div>
+</div>
+
+
+<div class="content container">
+  <div class="post">
+    <h1>GHCi runtime linker found a duplicate definition error</h1>
+    <span class="post-date">Jul 13, 2014 &middot; 2 minute read &middot; <a href="http://0xax.github.io/blog/2014/07/13/ghci-runtime-linker-found-a-duplicate-definition-error/#disqus_thread">Comments</a>
+    
+      <br/>
+
+      <div style="float:right;">
+        <a href="https://twitter.com/share" class="twitter-share-button" data-via="0xAX">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+	<script src="https://apis.google.com/js/platform.js" async defer></script>	
+	<div class="g-plusone" data-size="medium"></div>
+      </div>
+    
+    <a class="label" href="http://0xax.github.io//categories/haskell">haskell</a>
+    </span>
+    <p>Today I started to play with <a href="https://hackage.haskell.org/package/attoparsec">attoparsec</a> package and tried to write simple parser. I wrote really toy data type like this:</p>
+
+<pre><code class="language-haskell">module SimpleParser where
+ 
+import qualified Data.ByteString.Char8 as BS
+import Data.Attoparsec.ByteString
+ 
+data Str = End deriving (Show, Eq)
+</code></pre>
+
+<p>I tried to type:</p>
+
+<pre><code>*SimpleParser&gt; End
+</code></pre>
+
+<p>in ghci and will get End as I expected. Instead End I got following error:</p>
+
+<pre><code>GHCi runtime linker: fatal error: I found a duplicate definition for symbol
+   _hs_bytestring_long_long_uint_hex
+whilst processing object file
+   /home/alex/.cabal/lib/x86_64-linux-ghc-7.6.3/bytestring-0.10.4.0/HSbytestring-0.10.4.0.o
+This could be caused by:
+   * Loading two different object files which export the same symbol
+   * Specifying the same object file twice on the GHCi command line
+   * An incorrect `package.conf' entry, causing some object to be
+     loaded twice.
+GHCi cannot safely continue in this situation.  Exiting now.  Sorry.
+</code></pre>
+
+<p>As we can see in error output GHCi runtime linker found duplicate definition of _hs_bytestring_long_long_uint_hex. Let&rsquo;s see what&rsquo;s wrong bytestring package with:</p>
+
+<pre><code>$ cabal info bytestring
+</code></pre>
+
+<p>It will give us output like this:</p>
+
+<pre><code>* bytestring       (library)
+    Synopsis:      Fast, compact, strict and lazy byte strings with a list
+                   interface
+    Versions available: 0.9.0.4, 0.9.1.9, 0.9.1.10, 0.9.2.0, 0.9.2.1, 0.10.0.1,
+                        0.10.0.2, 0.10.2.0, 0.10.4.0 (and 14 others)
+    Versions installed: 0.10.4.0, 0.10.2.0
+    Homepage:      https://github.com/haskell/bytestring
+    Bug reports:   https://github.com/haskell/bytestring/issues
+    Description:   An efficient compact, immutable byte string type (both strict
+                   and lazy) suitable for binary or 8-bit character data.
+..............................................
+..............................................
+..............................................
+</code></pre>
+
+<p>We can note that there two installed versions of bytestring package. Let&rsquo;s remove old version with:</p>
+
+<pre><code>sudo ghc-pkg unregister --force bytestring-0.10.0.2
+</code></pre>
+
+<p>That&rsquo;s all. After this error with GHCi runtime linker found a duplicate definition error&hellip;&hellip; will disappear. Hope this blog post will be useful for all who will meet error like this.</p>
+
+<p>Happy coding!</p>
+
+
+          <div style="float:left;">
+        <a href="https://twitter.com/share" class="twitter-share-button" data-via="0xAX">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+	<script src="https://apis.google.com/js/platform.js" async defer></script>	
+	<div class="g-plusone" data-size="medium"></div>
+      </div>
+    
+  </div>
+  <div id="disqus_thread" style="width: 180% !important;"></div>
+</div>
+<div style="width: 100%;">
+
+<script type="text/javascript">
+var disqus_shortname = "0xAX";
+(function () {
+    var s = document.createElement('script'); s.async = true;
+    s.type = 'text/javascript';
+    s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+    (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+
+
+
+<script type="text/javascript">
+    var disqus_shortname = "0xAX";
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<script src="http://0xax.github.io//js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+  var _gaq=[['_setAccount','UA-64079379-1'],['_trackPageview']];
+  (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+  g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+  s.parentNode.insertBefore(g,s)}(document,'script'));
+</script>
+
+</body>
+</html>
+
+</div>

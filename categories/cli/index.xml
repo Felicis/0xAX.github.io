@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Cli on 0xAX blog</title>
+    <link>http://0xax.github.io/categories/cli/</link>
+    <description>Recent content in Cli on 0xAX blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sun, 01 Dec 2013 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://0xax.github.io/categories/cli/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Kindle and Read-only file system</title>
+      <link>http://0xax.github.io/blog/2013/12/01/kindle-and-read-only-file-system/</link>
+      <pubDate>Sun, 01 Dec 2013 00:00:00 +0000</pubDate>
+      
+      <guid>http://0xax.github.io/blog/2013/12/01/kindle-and-read-only-file-system/</guid>
+      <description>&lt;p&gt;Some times ago i moved on 64 bit system and my first problem with new system was situation when i couldn&amp;rsquo;t copy any files to my Amazon Kindle 5. Every time when i tried to delete some file from Kindle i got following error:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;[Errno 30] Read-only file system
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Here is the solution how to fix it: First of all you need to determine your device. Execute &lt;code&gt;mount&lt;/code&gt; command for you device and you must have something like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;/dev/sdc1 on /media/alex/Kindle type vfat (rw,nosuid,nodev,uid=1000,gid=1000,shortname=mixed,dmask=0077,utf8=1,showexec,flush,uhelper=udisks2)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;After that you mounted your device, just execute:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;sudo fsck.vfat -r /dev/sdc1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Unmount and remove and plug again the USB cable of your Kindle device, and after this simple manipulations you&amp;rsquo;ll  be able to copy any files to your &lt;code&gt;Kindle&lt;/code&gt;.&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

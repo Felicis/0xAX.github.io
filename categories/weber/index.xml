@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Weber on 0xAX blog</title>
+    <link>http://0xax.github.io/categories/weber/</link>
+    <description>Recent content in Weber on 0xAX blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 10 May 2014 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://0xax.github.io/categories/weber/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Started to dive into elixir-lang</title>
+      <link>http://0xax.github.io/blog/2014/05/10/started-to-dive-into-elixir-lang/</link>
+      <pubDate>Sat, 10 May 2014 00:00:00 +0000</pubDate>
+      
+      <guid>http://0xax.github.io/blog/2014/05/10/started-to-dive-into-elixir-lang/</guid>
+      <description>&lt;p&gt;Some times ago i decided to start new hobby project and in front of me had the task which instrument to choose for this task implementation. From the header you can guess that i decided to use Elixir. Why Elixir? The main reason is simple: I like Erlang and all it&amp;rsquo;s infrastructure, but in the same time i want to try something new and i think Elixir the best candidate for it. Now more details why i choose Elixir.&lt;/p&gt;
+
+&lt;p&gt;First of all quote from Elixir site:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Elixir is a functional, meta-programming aware language built on top of the Erlang VM. It is a dynamic language with flexible syntax and macro support that leverages Erlang&#39;s abilities to build concurrent, distributed and fault-tolerant applications with hot code upgrades.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yes, meta-programming built on top of Erlang VM, very good start, what we have at the current moment.&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Familiar to us patter matching:&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-elixir&#34;&gt;iex(1)&amp;gt; a = 5
+5
+iex(2)&amp;gt; 5 = a
+5
+iex(3)&amp;gt; list = [1,2,3]
+[1, 2, 3]
+iex(4)&amp;gt; [_, _, third] = list
+[1, 2, 3]
+iex(5)&amp;gt; third
+3
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Immutability:&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-elixir&#34;&gt;list = [1,2,3,4,5,6]
+[1, 2, 3, 4, 5, 6]
+iex(2)&amp;gt; list2 = [0 | list]
+[0, 1, 2, 3, 4, 5, 6]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;the &lt;code&gt;list&lt;/code&gt; will never change, so it simply constructs a new list with a head of 0 and a tail of list.&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Familiar and extended data types. Elixir’s built-in types are:&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;• Value types:
+  – Arbitrary-sized integers
+  – Floating point numbers
+  – Atoms
+  – Regular expressions&lt;/p&gt;
+
+&lt;p&gt;• System types:
+  – PIDs and Ports
+  – References&lt;/p&gt;
+
+&lt;p&gt;• Collection types
+  – Lists
+  – Tuples
+  – Binaries&lt;/p&gt;
+
+&lt;p&gt;And also: Keyword Lists, Ranges, Dictionaries, Maps and etc.&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;High Order functions&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-elixir&#34;&gt;iex(1)&amp;gt; f = :lists.map(fn elem -&amp;gt; elem * 5 end, [1,2,3,4,5])
+[5, 10, 15, 20, 25]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ol&gt;
+&lt;li&gt;The Amazing Pipes Operator&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-elixir&#34;&gt;iex(1)&amp;gt; import Enum
+nil
+iex(2)&amp;gt; (1..10) |&amp;gt; map(&amp;amp;1*&amp;amp;1) |&amp;gt; filter(&amp;amp;1 &amp;lt; 40)
+[1, 4, 9, 16, 25, 36]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Of course &lt;a href=&#34;http://www.erlang.org/doc/design_principles/users_guide.html&#34;&gt;OTP&lt;/a&gt;:&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-elixir&#34;&gt;defmodule OtpServer do
+  use GenServer.Behaviour
+ 
+  def init(current_number)
+    when is_number(current_number) do
+      { :ok, current_number }
+    end
+ 
+  def handle_call(:next_number, _from, current_number) do
+    { :reply, current_number, current_number+1 }
+  end
+end
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;And many many more&amp;hellip;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
