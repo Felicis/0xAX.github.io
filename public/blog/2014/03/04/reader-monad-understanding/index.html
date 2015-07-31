@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>Reader monad understanding &middot; 0xAX blog</title>
+
+  
+  <link rel="stylesheet" href="http://localhost:1313//css/poole.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/hyde.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/poole-overrides.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/hyde-overrides.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/hyde-x.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/highlight/sunburst.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link href="/favicon.png" rel="icon">
+
+  
+  
+  
+  
+
+  <meta name="description" content="">
+  <meta name="keywords" content="assembly, programming, linux, emacs, kernel">
+  <link rel="author" href="http://plus.google.com/Your%20Google&#43;%20profile%20ID">
+</head>
+<body>
+<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      
+      <h3><a href="http://0xax.github.io/" style="font-family: sans-serif; margin-left: 5px;">0xAX blog</a></h3>
+      
+    </div>
+    <hr/>
+    <img src="/2699235.png" alt="Smiley face" height="100" width="100" align="left">
+    <label style="margin-top: 10px; top: 5px; margin-left: 3px; position: relative; left: 10px;">
+      Hi, I am Alex, better known as <labe style="color: white;">0xAX</label><label style="top: 6px; left: 9px;position: relative;">.</label>
+      <br/><br/>
+      Blog covers anything I find interesting, low-level programming, elixirlang and erlang programming,
+      and of course my favorite emacs.
+    </label>
+    <hr/>
+    <ul class="sidebar-nav">
+      
+    </ul>
+
+    <ul class="sidebar-nav">
+      <li class="sidebar-nav-item">
+      <a href="https://github.com/0xAX"><i class="fa fa-github-square fa-2x"></i></a>
+      <a href="https://www.linkedin.com/profile/view?id=86504113&amp;trk=hp-identity-photo"><i class="fa fa-linkedin-square fa-2x"></i></a>
+      <a href="https://plus.google.com/108105900187376829286/posts"><i class="fa fa-google-plus-square fa-2x"></i></a>
+      <a href="https://twitter.com/0xAX"><i class="fa fa-twitter-square fa-2x"></i></a>
+      <a href="http://stackoverflow.com/users/274299/0xax"><i class="fa fa-stack-overflow fa-2x"></i></a>
+      <a href="http://0xax.gitbooks.io/linux-insides/content/index.html"><i class="fa fa-linux fa-2x"></i></a>
+
+      </li>
+    </ul>
+  </div>
+</div>
+
+
+<div class="content container">
+  <div class="post">
+    <h1>Reader monad understanding</h1>
+    <span class="post-date">Mar 4, 2014 &middot; 4 minute read &middot; <a href="http://localhost:1313/blog/2014/03/04/reader-monad-understanding/#disqus_thread">Comments</a>
+    
+      <br/>
+
+      <div style="float:right;">
+        <a href="https://twitter.com/share" class="twitter-share-button" data-via="0xAX">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+	<script src="https://apis.google.com/js/platform.js" async defer></script>	
+	<div class="g-plusone" data-size="medium"></div>
+      </div>
+    
+    <a class="label" href="http://localhost:1313//categories/fp">fp</a><a class="label" href="http://localhost:1313//categories/haskell">haskell</a>
+    </span>
+    
+
+<p>Some time ago I started to learn Haskell. It&rsquo;s not the first time (and event not second) that I started to learn this language. Every time I met different problems with understanding different abstractions like a Monads, Arrows, Monad Transformers and etc&hellip; I think that I&rsquo;m not alone with this :) But, in this time, I decided not to throw up training until I can not say: yes I can write in Haskell without pain. I started (as every time i did it) with the most popular book (for newbies) about Haskell - Learn You a Haskell and stopped at Reader monad. Spending some time I understand it (at least I think that I understand :)) and decided to share my understanding of this monad for the same newbie haskellers as me.</p>
+
+<p>Let&rsquo;s imagine simple and ubiquitous case that we have application which needs in some initial configurations. Application will get configuration form configuration file, let it be conf.js with very simple structure like this:</p>
+
+<pre><code class="language-javascript">{
+  &quot;username&quot; : &quot;0xAX&quot;
+}
+</code></pre>
+
+<p>It just has 1 <code>username</code> key. Of course it has very little resemblance with the real application configuration, but it is not important now and enough for the example. We will read it with great Aeson library from Bryan O&rsquo;Sullivan and use it in our application. Let&rsquo;s start with reading configuration file content and decoding json.</p>
+
+<h2 id="aeson:bce7b8a86cc9d49235884a56f18accd0">Aeson</h2>
+
+<p>For the start we must define data type for mapping json data in it with Aeson. As you can see above, we have simple json structure with username key. So we will map this json structure to the following data type:</p>
+
+<pre><code class="language-haskell">data ConfigStructure =
+  ConfigStructure {
+           key1 :: String,
+           key2 :: String
+         } deriving(Generic)
+</code></pre>
+
+<p>The <code>ConfigStructure</code> has the same structure as our json, it has same fields: username. After data type creation we must read our configuration file with json data and decode it with aeson:</p>
+
+<pre><code class="language-haskell">configPath :: String
+configPath = &quot;conf.json&quot;
+ 
+getConfigContent :: IO ConfigStructure
+getConfigContent = do
+  configContent &lt;- BSL.readFile configPath
+  let Just decodedConfig = decode configContent :: Maybe ConfigStructure
+  return decodedConfig
+</code></pre>
+
+<p>Here you can see that we reading json file with readFile function from Data.ByteString.Lazy. It has following type:</p>
+
+<pre><code>    Prelude&gt; import qualified Data.ByteString.Lazy as BSL
+    Prelude BSL&gt; :t BSL.readFile
+    BSL.readFile :: FilePath -&gt; IO BSL.ByteString
+</code></pre>
+
+<p>where FilePath is just String. Read configuration file and get it&rsquo;s content. After getting content of configuration file using Data.Aeson.decode function for decoding json data from it. After successful decoding we get Just ConfigStructure and now we can build Config data type for Reader and pass configuration file content to it.</p>
+
+<h2 id="reader-monad:bce7b8a86cc9d49235884a56f18accd0">Reader Monad</h2>
+
+<p>And now we come to the main point of this post. Main point of Reader monad to share read-only environment between couple of functions. Let&rsquo;s see how Reader declared in Control.Monad.Reader:</p>
+
+<pre><code class="language-haskell">newtype Reader r a = Reader { runReader :: r -&gt; a}
+</code></pre>
+
+<p>We can see that it made as wrapper for runReader function with type r -&gt; a where:</p>
+
+<ul>
+<li><code>r</code> - is a reader which need to run and get final value from it;</li>
+<li><code>a</code> - is an environment which need to share</li>
+</ul>
+
+<p>Another words we can build abstraction that will share configuration file content between different functions. Let&rsquo;s see how to implement it.</p>
+
+<pre><code class="language-haskell">type Config = Reader ConfigStructure String
+</code></pre>
+
+<p>Here we can see Config type synonym for Reader ConfigStructure String. Here ConfigStructure (see above) will be environment which we will share between functions and String return type. Now we write function for getting value of username field from configuration file:</p>
+
+<pre><code class="language-haskell">getKeyOne :: Config
+getKeyOne = do
+  config &lt;- ask
+  return (key1 config)
+</code></pre>
+
+<p>As you can see it&rsquo;s pretty simple. Here is only one thing which we don&rsquo;t know - ask function. ask function retrieves the monad environment. Pretty simple. Now we can get username in any place of our application with runReader function. As you can remember runReader function has following type:</p>
+
+<pre><code class="language-haskell">runReader :: r -&gt; a
+</code></pre>
+
+<p>Where r is a reader which need to run (getKeyOne in our case) and a is environment (configuration file content in our case). Again pretty simple. We can get value of username with:</p>
+
+<pre><code class="language-haskell">-- read configuration file
+decodedConfig &lt;- getConfigContent
+-- get &amp; print value of key1
+putStrLn $ runReader getKeyOne $ decodedConfig
+</code></pre>
+
+
+          <div style="float:left;">
+        <a href="https://twitter.com/share" class="twitter-share-button" data-via="0xAX">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+	<script src="https://apis.google.com/js/platform.js" async defer></script>	
+	<div class="g-plusone" data-size="medium"></div>
+      </div>
+    
+  </div>
+  <div id="disqus_thread" style="width: 180% !important;"></div>
+</div>
+<div style="width: 100%;">
+
+<script type="text/javascript">
+var disqus_shortname = "0xAX";
+(function () {
+    var s = document.createElement('script'); s.async = true;
+    s.type = 'text/javascript';
+    s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+    (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+
+
+
+<script type="text/javascript">
+    var disqus_shortname = "0xAX";
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<script src="http://localhost:1313//js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+  var _gaq=[['_setAccount','UA-64079379-1'],['_trackPageview']];
+  (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+  g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+  s.parentNode.insertBefore(g,s)}(document,'script'));
+</script>
+
+</body>
+</html>
+
+</div>

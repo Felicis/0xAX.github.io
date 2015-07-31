@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>Implementing tcp socket acceptor pool with golang &middot; 0xAX blog</title>
+
+  
+  <link rel="stylesheet" href="http://localhost:1313//css/poole.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/hyde.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/poole-overrides.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/hyde-overrides.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/hyde-x.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/highlight/sunburst.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link href="/favicon.png" rel="icon">
+
+  
+  
+  
+  
+
+  <meta name="description" content="">
+  <meta name="keywords" content="assembly, programming, linux, emacs, kernel">
+  <link rel="author" href="http://plus.google.com/Your%20Google&#43;%20profile%20ID">
+</head>
+<body>
+<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      
+      <h3><a href="http://0xax.github.io/" style="font-family: sans-serif; margin-left: 5px;">0xAX blog</a></h3>
+      
+    </div>
+    <hr/>
+    <img src="/2699235.png" alt="Smiley face" height="100" width="100" align="left">
+    <label style="margin-top: 10px; top: 5px; margin-left: 3px; position: relative; left: 10px;">
+      Hi, I am Alex, better known as <labe style="color: white;">0xAX</label><label style="top: 6px; left: 9px;position: relative;">.</label>
+      <br/><br/>
+      Blog covers anything I find interesting, low-level programming, elixirlang and erlang programming,
+      and of course my favorite emacs.
+    </label>
+    <hr/>
+    <ul class="sidebar-nav">
+      
+    </ul>
+
+    <ul class="sidebar-nav">
+      <li class="sidebar-nav-item">
+      <a href="https://github.com/0xAX"><i class="fa fa-github-square fa-2x"></i></a>
+      <a href="https://www.linkedin.com/profile/view?id=86504113&amp;trk=hp-identity-photo"><i class="fa fa-linkedin-square fa-2x"></i></a>
+      <a href="https://plus.google.com/108105900187376829286/posts"><i class="fa fa-google-plus-square fa-2x"></i></a>
+      <a href="https://twitter.com/0xAX"><i class="fa fa-twitter-square fa-2x"></i></a>
+      <a href="http://stackoverflow.com/users/274299/0xax"><i class="fa fa-stack-overflow fa-2x"></i></a>
+      <a href="http://0xax.gitbooks.io/linux-insides/content/index.html"><i class="fa fa-linux fa-2x"></i></a>
+
+      </li>
+    </ul>
+  </div>
+</div>
+
+
+<div class="content container">
+  <div class="post">
+    <h1>Implementing tcp socket acceptor pool with golang</h1>
+    <span class="post-date">Apr 6, 2014 &middot; 5 minute read &middot; <a href="http://localhost:1313/blog/2014/04/06/implementing-tcp-socket-acceptor-pool-with-golang/#disqus_thread">Comments</a>
+    
+      <br/>
+
+      <div style="float:right;">
+        <a href="https://twitter.com/share" class="twitter-share-button" data-via="0xAX">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+	<script src="https://apis.google.com/js/platform.js" async defer></script>	
+	<div class="g-plusone" data-size="medium"></div>
+      </div>
+    
+    <a class="label" href="http://localhost:1313//categories/development">Development</a><a class="label" href="http://localhost:1313//categories/golang">golang</a>
+    </span>
+    <p>So, as maybe some of you knows that i have started to use Golang programming language for my pet projects and since to solve &ldquo;Project Euler&rdquo; tasks is very useful deal, but very boring in the same time, i decided to create something more closer to real life. I decided to write XMPP server in golang and in this post i will tell about one part of this server - netpool/tcp library. netpool/tcp - is a tcp based socket acceptor pool. The idea is very simple, you will launch TCP listener which will launch many acceptors besides one, in this way you no need to spend time for creating new connection acceptor.</p>
+
+<p>First of all let&rsquo;s create new tcp package and import all libraries which will we need in this project:</p>
+
+<pre><code class="language-golang">package tcp
+ 
+import &quot;io&quot;
+import &quot;log&quot;
+import &quot;net&quot;
+import &quot;bufio&quot;
+import &quot;strconv&quot;
+import &quot;crypto/tls&quot;
+import &quot;crypto/rand&quot;
+import &quot;net/textproto&quot;
+</code></pre>
+
+<p>Now let&rsquo;s define types which we will need in our acceptor pool:</p>
+
+<pre><code class="language-golang">const (
+    RefuseConnection = iota
+    IncreaseConnection
+)
+ 
+const defaultIncreaseAcceptors = 50
+ 
+//
+// Listener instance
+//
+type Listener struct {
+    Accnb int
+    Port  int
+    Handler Handler
+    Lc    chan string
+    OverFlowStrategy int
+    Ssl   map[string]string
+}
+ 
+//
+// Connection handler
+//
+type Handler func(string, Connection)
+ 
+//
+// Connection wrapper 
+//
+type Connection struct {
+    Conn  net.Conn
+    Write chan []byte
+    Quit chan bool
+    Listener *Listener
+}
+</code></pre>
+
+<p>Let&rsquo;s go by order. First enumeration defines strategies when connection listener handles more connections than we define.</p>
+
+<ul>
+<li><code>RefuseConnection</code> - listener will refuse connections after connections amount overflow;</li>
+<li><code>IncreaseConnection</code> - listener will start yet another 50 acceptors.</li>
+</ul>
+
+<p>The next is simpe constant value which defines how many acceptors need to start after connections amount overflow. Next is <code>ListenerStruct</code> structure. It is a main structure which we will pass to StartListener function for launching new listener. It has following fields:</p>
+
+<ul>
+<li><code>Accnb</code> - number of acceptors;</li>
+<li><code>Port</code> - connection port;</li>
+<li><code>Handler</code> - function with 2 parameters: input string and conn tcp.Connection. It will calls when client send something to server;</li>
+<li><code>Lc</code> - listener channel, it needs for communicating with listener;</li>
+<li><code>OverFlowStrategy</code> - It can be 0 || 1, see note about overflow strategies;</li>
+<li><code>Ssl</code> - it is a map, we need to use it if we want to use ssl. Just create map with 2 string keys: pam and key. Next if will show how to use it.</li>
+</ul>
+
+<p>Also it has API which consists now only from one function - StopListener without any arguments, you can stop current connection with it. Next is a Connection structure. We have it every time as second parameter in connection handler function. It has simple API for manipulating with connection:</p>
+
+<ul>
+<li><code>Connection.Close</code> - close current connection;</li>
+<li><code>Connection.Send</code>  - send response.</li>
+</ul>
+
+<p>So, now web have all types which we will use in this library. Now proceed to implementation. All API of netpool/tcp consists only from one function:</p>
+
+<pre><code class="language-golang">func StartNewListener(listener *Listener) {
+ 
+}
+</code></pre>
+
+<p>It&rsquo;s a main function of this library and it launches new tcp listener and some acceptors. Let&rsquo;s see how it implemented. First of all it defines some variables like: acceptorCounter for count acceptors, checks is it connection over SSL or not and launches listener which depends on this:</p>
+
+<pre><code class="language-golang">var err error	
+var ln net.Listener
+var cert tls.Certificate
+ 
+if listener.Ssl == nil {
+    ln, err = net.Listen(&quot;tcp&quot;, &quot;:&quot; + strconv.Itoa(listener.Port))
+} else {
+    cert, err = tls.LoadX509KeyPair(listener.Ssl[&quot;pem&quot;], listener.Ssl[&quot;key&quot;])
+    config := tls.Config{Certificates: []tls.Certificate{cert}}
+    config.Rand = rand.Reader
+    ln, err = tls.Listen(&quot;tcp&quot;, &quot;:&quot; + strconv.Itoa(listener.Port), &amp;config)
+}
+	
+if err != nil {
+    log.Print(&quot;[Error] TCP listener didn't start: &quot;, err)
+    return
+}
+</code></pre>
+
+<p>Next it creates 2 channels:</p>
+
+<ul>
+<li><code>connectionCounter</code> - channel for communicating between acceptor goroutines and listener. If connection was closed it sends message to listener and listener decrease connection numbers, if new connection was accepted it increase connection number;</li>
+<li><code>closeConnection</code> - channel for commuicating between listener and acceptor for closing current connection.</li>
+</ul>
+
+<p>and starts acceptors:</p>
+
+<pre><code class="language-golang">connectionCounter := make(chan int)
+closeConnection      := make(chan bool)
+ 
+// start all acceptors
+for accs := 0; accs &lt; listener.Accnb; accs++ {
+    go acceptor(accs, ln, connectionCounter, listener, closeConnection, acceptorsCounter) 
+}
+</code></pre>
+
+<p>After this listener waits for messages from another goroutines for closing current listener, closing connection, connection removed/created and etc&hellip;:</p>
+
+<pre><code>for { 
+    switch listener.OverFlowStrategy {
+    case 0:         
+        if acceptorsCounter &gt;= listener.Accnb {
+            conn, _ := ln.Accept()
+            conn.Close()
+        }
+        case 1:
+        listener.Accnb += 50
+        for i := 0; i &lt; defaultIncreaseAcceptors; i++ {
+            go acceptor(i, ln, connectionCounter, listener, closeConnection, acceptorsCounter)
+        }
+    }
+        
+    select {
+    case msg := &lt;-connectionCounter:
+        if msg == -1 {
+            acceptorsCounter--
+        } else {
+            acceptorsCounter++
+        }
+    case msg := &lt;-listener.Lc:
+        if msg == &quot;stop&quot; {
+            closeConnection &lt;- true
+            close(listener.Lc)
+            close(connectionCounter)
+            ln.Close()
+            return
+        }           
+    }
+}
+</code></pre>
+
+<p>So what about acceptors&hellip; It&rsquo;s pretty simple as a listener implementation, it starts from accepting new connection and waits for incoming messages from connected client. If there are any incoming data from client it call handler function and pass input data and <code>Connection</code> structure to it:</p>
+
+<pre><code>func acceptor(acc int, ln net.Listener, counterChannel chan int, listener *Listener, closeChannel chan bool, accCounter int) {  
+    
+    conn, err := ln.Accept()
+    
+    if err != nil {
+        log.Print(&quot;[Error] Tcp listener can't accept new connection: &quot;, acc)
+        return
+    }
+    
+    // send to the listener info about new accepted connection
+    counterChannel &lt;- 1
+    // create new connection struct
+    newConnection := &amp;Connection{conn, make(chan []byte), make(chan bool), listener}
+    
+    //
+    // start to handle new connction
+    //
+    for {
+        line, inputErr := textproto.NewReader(bufio.NewReader(conn)).ReadLine()     
+        
+        if inputErr == io.EOF {
+            log.Print(&quot;inputErr: &quot;, inputErr)
+            // close connection
+            conn.Close()
+            // tell to listener that one acceptor died
+            counterChannel &lt;- -1
+            
+            return
+        }
+        
+        go listener.Handler(line, *newConnection)
+        
+        //
+        // .... 
+        //
+}
+</code></pre>
+
+<p>After this it as a listener checks incoming message from other goroutines, to stop connection and etc&hellip;</p>
+
+<p>So it&rsquo;s end. As we can saw concurrency is a pretty simple with Golang.</p>
+
+<p>As i said in previous post i&rsquo;m not a golang super-hacker, if you will have any recommendations for my golang code or you want to take part in XMPP server developing with golang i will be very pleased to hear it, write me in comment or ping me in <a href="https://twitter.com/0xAX">twitter</a>. Also i made this library primarily for future extd XMPP server but i tried to make it generic so i think it can be useful not only for me.</p>
+
+
+          <div style="float:left;">
+        <a href="https://twitter.com/share" class="twitter-share-button" data-via="0xAX">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+	<script src="https://apis.google.com/js/platform.js" async defer></script>	
+	<div class="g-plusone" data-size="medium"></div>
+      </div>
+    
+  </div>
+  <div id="disqus_thread" style="width: 180% !important;"></div>
+</div>
+<div style="width: 100%;">
+
+<script type="text/javascript">
+var disqus_shortname = "0xAX";
+(function () {
+    var s = document.createElement('script'); s.async = true;
+    s.type = 'text/javascript';
+    s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+    (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+
+
+
+<script type="text/javascript">
+    var disqus_shortname = "0xAX";
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<script src="http://localhost:1313//js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+  var _gaq=[['_setAccount','UA-64079379-1'],['_trackPageview']];
+  (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+  g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+  s.parentNode.insertBefore(g,s)}(document,'script'));
+</script>
+
+</body>
+</html>
+
+</div>

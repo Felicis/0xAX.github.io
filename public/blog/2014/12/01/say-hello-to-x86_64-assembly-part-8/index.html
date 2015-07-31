@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>Say hello to x86_64 Assembly [part 8] &middot; 0xAX blog</title>
+
+  
+  <link rel="stylesheet" href="http://localhost:1313//css/poole.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/hyde.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/poole-overrides.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/hyde-overrides.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/hyde-x.css">
+  <link rel="stylesheet" href="http://localhost:1313//css/highlight/sunburst.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link href="/favicon.png" rel="icon">
+
+  
+  
+  
+  
+
+  <meta name="description" content="">
+  <meta name="keywords" content="assembly, programming, linux, emacs, kernel">
+  <link rel="author" href="http://plus.google.com/Your%20Google&#43;%20profile%20ID">
+</head>
+<body>
+<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      
+      <h3><a href="http://0xax.github.io/" style="font-family: sans-serif; margin-left: 5px;">0xAX blog</a></h3>
+      
+    </div>
+    <hr/>
+    <img src="/2699235.png" alt="Smiley face" height="100" width="100" align="left">
+    <label style="margin-top: 10px; top: 5px; margin-left: 3px; position: relative; left: 10px;">
+      Hi, I am Alex, better known as <labe style="color: white;">0xAX</label><label style="top: 6px; left: 9px;position: relative;">.</label>
+      <br/><br/>
+      Blog covers anything I find interesting, low-level programming, elixirlang and erlang programming,
+      and of course my favorite emacs.
+    </label>
+    <hr/>
+    <ul class="sidebar-nav">
+      
+    </ul>
+
+    <ul class="sidebar-nav">
+      <li class="sidebar-nav-item">
+      <a href="https://github.com/0xAX"><i class="fa fa-github-square fa-2x"></i></a>
+      <a href="https://www.linkedin.com/profile/view?id=86504113&amp;trk=hp-identity-photo"><i class="fa fa-linkedin-square fa-2x"></i></a>
+      <a href="https://plus.google.com/108105900187376829286/posts"><i class="fa fa-google-plus-square fa-2x"></i></a>
+      <a href="https://twitter.com/0xAX"><i class="fa fa-twitter-square fa-2x"></i></a>
+      <a href="http://stackoverflow.com/users/274299/0xax"><i class="fa fa-stack-overflow fa-2x"></i></a>
+      <a href="http://0xax.gitbooks.io/linux-insides/content/index.html"><i class="fa fa-linux fa-2x"></i></a>
+
+      </li>
+    </ul>
+  </div>
+</div>
+
+
+<div class="content container">
+  <div class="post">
+    <h1>Say hello to x86_64 Assembly [part 8]</h1>
+    <span class="post-date">Dec 1, 2014 &middot; 5 minute read &middot; <a href="http://localhost:1313/blog/2014/12/01/say-hello-to-x86_64-assembly-part-8/#disqus_thread">Comments</a>
+    
+      <br/>
+
+      <div style="float:right;">
+        <a href="https://twitter.com/share" class="twitter-share-button" data-via="0xAX">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+	<script src="https://apis.google.com/js/platform.js" async defer></script>	
+	<div class="g-plusone" data-size="medium"></div>
+      </div>
+    
+    <a class="label" href="http://localhost:1313//categories/development">Development</a><a class="label" href="http://localhost:1313//categories/low-level">low-level</a><a class="label" href="http://localhost:1313//categories/assembly">assembly</a>
+    </span>
+    
+
+<p>It is eight and final part of Say hello to x86_64 Assembly and here we will take a look on how to work with non-integer numbers in assembler. There are a couple of ways how to work with floating point data:</p>
+
+<ul>
+<li>fpu</li>
+<li>sse</li>
+</ul>
+
+<p>First of all let&rsquo;s look how floating point number stored in memory. There are three floating point data types:</p>
+
+<ul>
+<li>single-precision</li>
+<li>double-precision</li>
+<li>double-extended precision</li>
+</ul>
+
+<p>As Intel&rsquo;s 64-ia-32-architecture-software-developer-vol-1-manual described:</p>
+
+<pre><code>The data formats for these data types correspond directly to formats specified in the IEEE Standard 754 for Binary Floating-Point Arithmetic. 
+</code></pre>
+
+<p>Single-precision floating-point float point data presented in memory:</p>
+
+<ul>
+<li>sign - 1 bit</li>
+<li>exponent - 8 bits</li>
+<li>mantissa - 23 bits</li>
+</ul>
+
+<p>So for example if we have following number:</p>
+
+<table>
+<thead>
+<tr>
+<th>sign</th>
+<th>exponent</th>
+<th>mantissa</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>0</td>
+<td>00001111</td>
+<td>110000000000000000000000</td>
+</tr>
+</tbody>
+</table>
+
+<p>Exponent is either an 8 bit signed integer from −128 to 127 or an 8 bit unsigned integer from 0 to 255. Sign bit is zero, so we have positive number. Exponent is 00001111b or 15 in decimal. For single-precision displacement is 127, it means that we need to calculate exponent - 127 or 15 - 127 = -112. Since the normalized binary integer part of the mantissa is always equal to one, then in the mantissa is recorded only its fractional part, so mantissa or our number is 1,110000000000000000000000. Result value will be:</p>
+
+<pre><code>value = mantissa * 2^-112 
+</code></pre>
+
+<p>Double precision number is 64 bit of memory where:</p>
+
+<ul>
+<li>sign - 1 bit</li>
+<li>exponent - 11 bit</li>
+<li>mantissa - 52 bit</li>
+</ul>
+
+<p>Result number we can get by:</p>
+
+<pre><code>value = (-1)^sign * (1 + mantissa / 2 ^ 52) * 2 ^ exponent - 1023) 
+</code></pre>
+
+<p>Extended precision is 80 bit numbers where:</p>
+
+<ul>
+<li>sign - 1 bit</li>
+<li>exponent - 15 bit</li>
+<li>mantissa - 112 bit</li>
+</ul>
+
+<p>Read more about it - <a href="https://en.wikipedia.org/wiki/Extended_precision">here</a>. Let&rsquo;s look at simple example.</p>
+
+<h2 id="x87-fpu:3e92c14d51af847986b077935259e6c4">x87 FPU</h2>
+
+<p>The x87 Floating-Point Unit (FPU) provides high-performance floating-point processing. It supports the floating-point, integer, and packed BCD integer data types and the floating-point processing algorithms. x87 provides following instructions set:</p>
+
+<ul>
+<li>Data transfer instructions</li>
+<li>Basic arithmetic instructions</li>
+<li>Comparison instructions</li>
+<li>Transcendental instructions</li>
+<li>Load constant instructions</li>
+<li>x87 FPU control instructions</li>
+</ul>
+
+<p>Of course we will not see all instructions here provided by x87, for additional information see 64-ia-32-architecture-software-developer-vol-1-manual Chapter 8. There are a couple of data transfer instructions:</p>
+
+<ul>
+<li><code>FDL</code> - load floating point</li>
+<li><code>FST</code> - store floating point (in ST(0) register)</li>
+<li><code>FSTP</code> - store floating point and pop (in ST(0) register)</li>
+</ul>
+
+<p>Arithmetic instructions:</p>
+
+<ul>
+<li><code>FADD</code> - add floating point</li>
+<li><code>FIADD</code> - add integer to floating point</li>
+<li><code>FSUB</code> - subtract floating point</li>
+<li><code>FISUB</code> - subtract integer from floating point</li>
+<li><code>FABS</code> - get absolute value</li>
+<li><code>FIMUL</code> - multiply integer and floating point</li>
+<li><code>FIDIV</code> - device integer and floating point</li>
+</ul>
+
+<p>and etc&hellip; FPU has eight 10 byte registers organized in a ring stack. Top of the stack - register ST(0), other registers are ST(1), ST(2) &hellip; ST(7). We usually uses it when we are working with floating point data. For example:</p>
+
+<pre><code class="language-assembly">section .data
+    x dw 1.0
+ 
+fld dword [x]
+</code></pre>
+
+<p>pushes value of x to this stack. Operator can be 32bit, 64bit or 80bit. It works as usual stack, if we push another value with fld, x value will be in ST(1) and new value will be in ST(0). FPU instructions can use these registers, for example:</p>
+
+<pre><code class="language-assembly">;;
+;; adds st0 value to st3 and saves it in st0
+;;
+fadd st0, st3
+ 
+;;
+;; adds x and y and saves it in st0
+;;
+fld dword [x]
+fld dword [y]
+fadd
+</code></pre>
+
+<p>Let&rsquo;s look on simple example. We will have circle radius and calculate circle square and print it:</p>
+
+<pre><code class="language-assembly">extern printResult
+ 
+section .data
+		radius    dq  1.7
+		result    dq  0
+ 
+		SYS_EXIT  equ 60
+		EXIT_CODE equ 0
+ 
+global _start
+section .text
+ 
+_start:
+		fld qword [radius]
+		fld qword [radius]
+		fmul
+ 
+		fldpi
+		fmul
+		fstp qword [result]
+ 
+		mov rax, 0
+		movq xmm0, [result]
+		call printResult
+ 
+		mov rax, SYS_EXIT
+		mov rdi, EXIT_CODE
+		syscall
+</code></pre>
+
+<p>Let&rsquo;s try to understand how it works: First of all there is data section with predefined radius data and result which we will use for storing result. After this 2 constants for calling exit system call. Next we see entry point of program - _start. There we stores radius value in st0 and st1 with fld instruction and multiply this two values with fmul instruction. After this operations we will have result of radius on radius multiplication in st0 register. Next we load The number π with fldpi instruction to the st0 register, and after it radius * radius value will be in st1 register. After this execute multiplication with fmul on st0 (pi) and st1 (value of radius * radius), result will be in st0 register. Ok, now we have circle square in st0 register and can extract it with fstp instruction to the result. Next point is to pass result to the C function and call it. Remember we call C function from assembly code in previous blog post. We need to know x86_64 calling convention. In usual way we pass function parameters through registers rdi (arg1), rsi (arg2) and etc&hellip;, but here is floating point data. There is special registers: xmm0 - xmm15 provided by sse. First of all we need to put number of xmmN register to rax register (0 for our case), and put result to xmm0 register. Now we can call C function for printing result:</p>
+
+<pre><code class="language-C">#include &lt;stdio.h&gt;
+ 
+extern int printResult(double result);
+ 
+int printResult(double result) {
+	printf(&quot;Circle radius is - %f\n&quot;, result);
+	return 0;
+}
+</code></pre>
+
+<p>We can build it with:</p>
+
+<pre><code>build:
+	gcc  -g -c circle_fpu_87c.c -o c.o
+	nasm -f elf64 circle_fpu_87.asm -o circle_fpu_87.o
+	ld   -dynamic-linker /lib64/ld-linux-x86-64.so.2 -lc circle_fpu_87.o  c.o -o testFloat1
+ 
+clean:
+	rm -rf *.o
+	rm -rf testFloat1
+</code></pre>
+
+<p>And run:</p>
+
+<p><img src="http://1.bp.blogspot.com/-yBn1V2mJ3no/VJgkuudOQRI/AAAAAAAAAIc/rqVNUpX87Og/s1600/Screenshot%2Bfrom%2B2014-12-22%2B20%3A02%3A56.png" alt="result" /></p>
+
+
+          <div style="float:left;">
+        <a href="https://twitter.com/share" class="twitter-share-button" data-via="0xAX">Tweet</a>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+	<script src="https://apis.google.com/js/platform.js" async defer></script>	
+	<div class="g-plusone" data-size="medium"></div>
+      </div>
+    
+  </div>
+  <div id="disqus_thread" style="width: 180% !important;"></div>
+</div>
+<div style="width: 100%;">
+
+<script type="text/javascript">
+var disqus_shortname = "0xAX";
+(function () {
+    var s = document.createElement('script'); s.async = true;
+    s.type = 'text/javascript';
+    s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+    (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+
+
+
+<script type="text/javascript">
+    var disqus_shortname = "0xAX";
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<script src="http://localhost:1313//js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script>
+  var _gaq=[['_setAccount','UA-64079379-1'],['_trackPageview']];
+  (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+  g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+  s.parentNode.insertBefore(g,s)}(document,'script'));
+</script>
+
+</body>
+</html>
+
+</div>
