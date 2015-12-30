@@ -2,7 +2,7 @@
 <html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
 <head>
     <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Tangerine">
-    <title>Emacs + GoLang [gofmt not found problem] - Just a Memo</title>
+    <title>Amazon Kindle and Read-only file system - Just a Memo</title>
     <!-- Using the latest rendering mode for IE -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta charset="utf-8">
@@ -11,20 +11,20 @@
 
     <link href="./extra/favicon.ico" rel="icon">
 
-<link rel="canonical" href="./emacs-golang-gofmt-not-found-problem.html">
+<link rel="canonical" href="./amazon-kindle-and-read-only-file-system.html">
 
         <meta name="author" content="Alexander Kuleshov" />
-        <meta name="keywords" content="emacs,golang" />
-        <meta name="description" content="Some time ago, as you maybe saw from my tweet that I eventually back to emacs. i moved back from sublime text editor to emacs for go, erlang, js programming and general usage. I installed standard go-mode with emacs package manager, configured go-mode: (require &#39;go-mode) and opened simple golang project ..." />
+        <meta name="keywords" content="linux,amazon kindle" />
+        <meta name="description" content="Some times ago I&#39;ve moved on 64 bit system and my first problem with new system was a situation when I couldn&#39;t copy any files to my Amazon Kindle 5. Every time, when I&#39;ve tried to delete some file from my Kindle, I got following error: [Errno ..." />
 
         <meta property="og:site_name" content="Just a Memo" />
         <meta property="og:type" content="article"/>
-        <meta property="og:title" content="Emacs + GoLang [gofmt not found problem]"/>
-        <meta property="og:url" content="./emacs-golang-gofmt-not-found-problem.html"/>
-        <meta property="og:description" content="Some time ago, as you maybe saw from my tweet that I eventually back to emacs. i moved back from sublime text editor to emacs for go, erlang, js programming and general usage. I installed standard go-mode with emacs package manager, configured go-mode: (require &#39;go-mode) and opened simple golang project ..."/>
-        <meta property="article:published_time" content="2014-02-21" />
-            <meta property="article:tag" content="emacs" />
-            <meta property="article:tag" content="golang" />
+        <meta property="og:title" content="Amazon Kindle and Read-only file system"/>
+        <meta property="og:url" content="./amazon-kindle-and-read-only-file-system.html"/>
+        <meta property="og:description" content="Some times ago I&#39;ve moved on 64 bit system and my first problem with new system was a situation when I couldn&#39;t copy any files to my Amazon Kindle 5. Every time, when I&#39;ve tried to delete some file from my Kindle, I got following error: [Errno ..."/>
+        <meta property="article:published_time" content="2013-12-01" />
+            <meta property="article:tag" content="linux" />
+            <meta property="article:tag" content="amazon kindle" />
             <meta property="article:author" content="Alexander Kuleshov" />
 
 
@@ -109,28 +109,35 @@ Just a Memo            </a>
         <article>
             <header class="page-header">
                 <h1>
-                    <a href="./emacs-golang-gofmt-not-found-problem.html"
+                    <a href="./amazon-kindle-and-read-only-file-system.html"
                        rel="bookmark"
-                       title="Permalink to Emacs + GoLang [gofmt not found problem]">
-                        Emacs + GoLang [gofmt not found problem]
+                       title="Permalink to Amazon Kindle and Read-only file system">
+                        Amazon Kindle and Read-only file system
                     </a>
                 </h1>
             </header>
             <div class="entry-content" style="font-family: 'Droid Sans'; font-size: 17px;">
-                <p>Some time ago, as you maybe saw from my <a href="https://twitter.com/0xAX/status/478185552194203650/photo/1">tweet</a> that I eventually back to emacs. i moved back from sublime text editor to emacs for go, erlang, js programming and general usage. I installed standard go-mode with emacs package manager, configured go-mode:</p>
-<div class="highlight"><pre><span class="p">(</span><span class="nb">require</span> <span class="ss">&#39;go-mode</span><span class="p">)</span>
+                <p>Some times ago I've moved on 64 bit system and my first problem with new system was a situation when I couldn't copy any files to my <a href="https://en.wikipedia.org/wiki/Amazon_Kindle#Kindle_5">Amazon Kindle 5</a>. Every time, when I've tried to delete some file from my Kindle, I got following error:</p>
+<div class="highlight"><pre>[Errno 30] Read-only file system
 </pre></div>
 
 
-<p>and opened simple golang project in it. After the editing first <em>.go file i got a problem. When i tried to save my </em>.go file, i got error in emacs minibuffer:</p>
-<div class="highlight"><pre><span class="n">Error</span><span class="o">:</span> <span class="n">gofmt</span> <span class="n">program</span> <span class="n">not</span> <span class="n">found</span><span class="o">.</span>
+<p>Here is the solution how to fix it: First of all you need to determine your device in the system. To do this you need to execute <code>mount</code> command for you device and you must have something like this:</p>
+<div class="highlight"><pre><span class="nv">$ </span>mount
+
+/dev/sdc1 on /media/alex/Kindle <span class="nb">type </span>vfat <span class="se">\</span>
+<span class="o">(</span>rw, nosuid, nodev, <span class="nv">uid</span><span class="o">=</span>1000, <span class="nv">gid</span><span class="o">=</span>1000,   <span class="se">\</span>
+<span class="nv">shortname</span><span class="o">=</span>mixed, <span class="nv">dmask</span><span class="o">=</span>0077, <span class="nv">utf8</span><span class="o">=</span>1,      <span class="se">\</span>
+showexec,flush,uhelper<span class="o">=</span>udisks2<span class="o">)</span>
 </pre></div>
 
 
-<p>Solution for this problem proved to be very simple:</p>
-<div class="highlight"><pre><span class="p">(</span><span class="k">setq</span> <span class="nv">load-path</span> <span class="p">(</span><span class="nb">cons</span> <span class="s">&quot;/home/alex/dev/go-projects/go/misc/emacs&quot;</span> <span class="nv">load-path</span><span class="p">))</span>
-<span class="p">(</span><span class="nb">require</span> <span class="ss">&#39;go-mode-load</span><span class="p">)</span>
+<p>After that you mounted your device, just execute:</p>
+<div class="highlight"><pre>sudo fsck.vfat -r /dev/sdc1
 </pre></div>
+
+
+<p>Unmount and remove and plug again the USB cable of your Kindle device, and after this simple manipulations you'll  be able to copy any files to your Kindle.</p>
             </div>
             <!-- /.entry-content -->
             <div class="panel" style="font-family: 'Droid Sans';">
@@ -144,16 +151,16 @@ Just a Memo            </a>
       <div style="float: right;"><footer class="post-info">
     <span class="label label-default">Date</span>
     <span class="published">
-        <i class="fa fa-calendar"></i><time datetime="2014-02-21T00:00:00+07:00"> Fri 21 February 2014</time>
+        <i class="fa fa-calendar"></i><time datetime="2013-12-01T00:00:00+07:00"> Sun 01 December 2013</time>
     </span>
 
 
 
 
 <span class="label label-default">Tags</span>
-	<a href="./tag/emacs.html">emacs</a>
+	<a href="./tag/linux.html">linux</a>
         /
-	<a href="./tag/golang.html">golang</a>
+	<a href="./tag/amazon-kindle.html">amazon kindle</a>
     
 </footer><!-- /.post-info --></div>
     </div>

@@ -141,22 +141,12 @@ Just a Memo            </a>
 <li>mantissa - 23 bits</li>
 </ul>
 <p>So for example if we have following number:</p>
-<table>
-<thead>
-<tr>
-<th>sign</th>
-<th>exponent</th>
-<th>mantissa</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>0</td>
-<td>00001111</td>
-<td>110000000000000000000000</td>
-</tr>
-</tbody>
-</table>
+<div class="highlight"><pre>| sign  | exponent | mantissa
+|-------|----------|-------------------------
+| 0     | 00001111 | 110000000000000000000000
+</pre></div>
+
+
 <p>Exponent is either an 8 bit signed integer from −128 to 127 or an 8 bit unsigned integer from 0 to 255. Sign bit is zero, so we have positive number. Exponent is 00001111b or 15 in decimal. For single-precision displacement is 127, it means that we need to calculate exponent - 127 or 15 - 127 = -112. Since the normalized binary integer part of the mantissa is always equal to one, then in the mantissa is recorded only its fractional part, so mantissa or our number is 1,110000000000000000000000. Result value will be:</p>
 <div class="highlight"><pre>value = mantissa * 2^-112
 </pre></div>
@@ -206,7 +196,8 @@ Just a Memo            </a>
 <li><code>FIMUL</code> - multiply integer and floating point</li>
 <li><code>FIDIV</code> - device integer and floating point</li>
 </ul>
-<p>and etc... FPU has eight 10 byte registers organized in a ring stack. Top of the stack - register ST(0), other registers are ST(1), ST(2) ... ST(7). We usually uses it when we are working with floating point data. For example:</p>
+<p>and etc... FPU has eight 10 byte registers organized in a ring stack. Top of the stack - register ST(0), other registers are ST(1), ST(2) ... ST(7). We usually uses it when we are working with floating point data.</p>
+<p>For example:</p>
 <div class="highlight"><pre>section .data
     x dw 1.0
 

@@ -22,22 +22,12 @@
 &lt;li&gt;mantissa - 23 bits&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;So for example if we have following number:&lt;/p&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;sign&lt;/th&gt;
-&lt;th&gt;exponent&lt;/th&gt;
-&lt;th&gt;mantissa&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;td&gt;00001111&lt;/td&gt;
-&lt;td&gt;110000000000000000000000&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;| sign  | exponent | mantissa
+|-------|----------|-------------------------
+| 0     | 00001111 | 110000000000000000000000
+&lt;/pre&gt;&lt;/div&gt;
+
+
 &lt;p&gt;Exponent is either an 8 bit signed integer from −128 to 127 or an 8 bit unsigned integer from 0 to 255. Sign bit is zero, so we have positive number. Exponent is 00001111b or 15 in decimal. For single-precision displacement is 127, it means that we need to calculate exponent - 127 or 15 - 127 = -112. Since the normalized binary integer part of the mantissa is always equal to one, then in the mantissa is recorded only its fractional part, so mantissa or our number is 1,110000000000000000000000. Result value will be:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;value = mantissa * 2^-112
 &lt;/pre&gt;&lt;/div&gt;
@@ -87,7 +77,8 @@
 &lt;li&gt;&lt;code&gt;FIMUL&lt;/code&gt; - multiply integer and floating point&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;FIDIV&lt;/code&gt; - device integer and floating point&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;and etc... FPU has eight 10 byte registers organized in a ring stack. Top of the stack - register ST(0), other registers are ST(1), ST(2) ... ST(7). We usually uses it when we are working with floating point data. For example:&lt;/p&gt;
+&lt;p&gt;and etc... FPU has eight 10 byte registers organized in a ring stack. Top of the stack - register ST(0), other registers are ST(1), ST(2) ... ST(7). We usually uses it when we are working with floating point data.&lt;/p&gt;
+&lt;p&gt;For example:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;section .data
     x dw 1.0
 
@@ -2159,7 +2150,7 @@ for accs := 0; accs &amp;lt; listener.Accnb; accs++ {
 &lt;span class="nf"&gt;decodedConfig&lt;/span&gt; &lt;span class="ow"&gt;&amp;lt;-&lt;/span&gt; &lt;span class="n"&gt;getConfigContent&lt;/span&gt;
 &lt;span class="c1"&gt;-- get &amp;amp; print value of key1&lt;/span&gt;
 &lt;span class="nf"&gt;putStrLn&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="n"&gt;runReader&lt;/span&gt; &lt;span class="n"&gt;getKeyOne&lt;/span&gt; &lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="n"&gt;decodedConfig&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Alexander Kuleshov</dc:creator><pubDate>Tue, 04 Mar 2014 00:00:00 +0700</pubDate><guid>tag:,2014-03-04:0xax.github.com/reader-monad-understanding.html</guid><category>haskell</category></item><item><title>Emacs + GoLang [gofmt not found problem]</title><link>0xax.github.com/emacs-golang-gofmt-not-found-problem.html</link><description>&lt;p&gt;Some time ago, as you can saw from my &lt;a href="https://twitter.com/0xAX/status/478185552194203650/photo/1"&gt;tweet&lt;/a&gt; that I eventually back to emacs. i moved back from sublime text editor to emacs for go, erlang, js programming and general usage. I installed standard go-mode with emacs package manager, configured go-mode:&lt;/p&gt;
+&lt;/pre&gt;&lt;/div&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Alexander Kuleshov</dc:creator><pubDate>Tue, 04 Mar 2014 00:00:00 +0700</pubDate><guid>tag:,2014-03-04:0xax.github.com/reader-monad-understanding.html</guid><category>haskell</category></item><item><title>Emacs + GoLang [gofmt not found problem]</title><link>0xax.github.com/emacs-golang-gofmt-not-found-problem.html</link><description>&lt;p&gt;Some time ago, as you maybe saw from my &lt;a href="https://twitter.com/0xAX/status/478185552194203650/photo/1"&gt;tweet&lt;/a&gt; that I eventually back to emacs. i moved back from sublime text editor to emacs for go, erlang, js programming and general usage. I installed standard go-mode with emacs package manager, configured go-mode:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="ss"&gt;&amp;#39;go-mode&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
 &lt;/pre&gt;&lt;/div&gt;
 
@@ -2172,7 +2163,7 @@ for accs := 0; accs &amp;lt; listener.Accnb; accs++ {
 &lt;p&gt;Solution for this problem proved to be very simple:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;setq&lt;/span&gt; &lt;span class="nv"&gt;load-path&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;cons&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;/home/alex/dev/go-projects/go/misc/emacs&amp;quot;&lt;/span&gt; &lt;span class="nv"&gt;load-path&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
 &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;require&lt;/span&gt; &lt;span class="ss"&gt;&amp;#39;go-mode-load&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Alexander Kuleshov</dc:creator><pubDate>Fri, 21 Feb 2014 00:00:00 +0700</pubDate><guid>tag:,2014-02-21:0xax.github.com/emacs-golang-gofmt-not-found-problem.html</guid><category>emacs</category><category>golang</category></item><item><title>Get function execution time in Haskell</title><link>0xax.github.com/get-function-execution-time-in-haskell.html</link><description>&lt;p&gt;Some times ago i encountered with question: How to get function execution time in Haskell program? I asked this question at &lt;a href="http://stackoverflow.com/questions/6766450/haskell-function-execution-time"&gt;StackOverflow&lt;/a&gt;, and got some useful answers. Here i will try to describe how to do it. For example we have simple haskell program which will calculate sum of prime numbers which are between 0 and 10000. Something like this:&lt;/p&gt;
+&lt;/pre&gt;&lt;/div&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Alexander Kuleshov</dc:creator><pubDate>Fri, 21 Feb 2014 00:00:00 +0700</pubDate><guid>tag:,2014-02-21:0xax.github.com/emacs-golang-gofmt-not-found-problem.html</guid><category>emacs</category><category>golang</category></item><item><title>Get function execution time in Haskell</title><link>0xax.github.com/get-function-execution-time-in-haskell.html</link><description>&lt;p&gt;Some times ago I encountered with question: How to get function execution time in Haskell program? I asked this question at &lt;a href="http://stackoverflow.com/questions/6766450/haskell-function-execution-time"&gt;StackOverflow&lt;/a&gt;, and got some useful answers. Here i will try to describe how to do it. For example we have simple haskell program which will calculate sum of prime numbers which are between 0 and 10000. Something like this:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kr"&gt;module&lt;/span&gt; &lt;span class="nn"&gt;TimingTest&lt;/span&gt; &lt;span class="kr"&gt;where&lt;/span&gt;
 
 &lt;span class="nf"&gt;main&lt;/span&gt; &lt;span class="ow"&gt;::&lt;/span&gt; &lt;span class="kt"&gt;IO&lt;/span&gt;&lt;span class="nb"&gt;()&lt;/span&gt;
@@ -2261,12 +2252,12 @@ estimating cost of a clock call...
 mean is 98.08812 ns (28 iterations)
 found 4 outliers among 28 samples (14.3%)
 4 (14.3%) low severe
-&lt;/pre&gt;&lt;/div&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Alexander Kuleshov</dc:creator><pubDate>Mon, 13 Jan 2014 00:00:00 +0700</pubDate><guid>tag:,2014-01-13:0xax.github.com/get-function-execution-time-in-haskell.html</guid><category>haskell</category></item><item><title>Kindle and Read-only file system</title><link>0xax.github.com/kindle-and-read-only-file-system.html</link><description>&lt;p&gt;Some times ago i moved on 64 bit system and my first problem with new system was situation when i couldn't copy any files to my Amazon Kindle 5. Every time when i tried to delete some file from Kindle i got following error:&lt;/p&gt;
+&lt;/pre&gt;&lt;/div&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Alexander Kuleshov</dc:creator><pubDate>Mon, 13 Jan 2014 00:00:00 +0700</pubDate><guid>tag:,2014-01-13:0xax.github.com/get-function-execution-time-in-haskell.html</guid><category>haskell</category></item><item><title>Amazon Kindle and Read-only file system</title><link>0xax.github.com/amazon-kindle-and-read-only-file-system.html</link><description>&lt;p&gt;Some times ago I've moved on 64 bit system and my first problem with new system was a situation when I couldn't copy any files to my &lt;a href="https://en.wikipedia.org/wiki/Amazon_Kindle#Kindle_5"&gt;Amazon Kindle 5&lt;/a&gt;. Every time, when I've tried to delete some file from my Kindle, I got following error:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;[Errno 30] Read-only file system
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;Here is the solution how to fix it: First of all you need to determine your device. Execute &lt;code&gt;mount&lt;/code&gt; command for you device and you must have something like this:&lt;/p&gt;
+&lt;p&gt;Here is the solution how to fix it: First of all you need to determine your device in the system. To do this you need to execute &lt;code&gt;mount&lt;/code&gt; command for you device and you must have something like this:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$ &lt;/span&gt;mount
 
 /dev/sdc1 on /media/alex/Kindle &lt;span class="nb"&gt;type &lt;/span&gt;vfat &lt;span class="se"&gt;\&lt;/span&gt;
@@ -2281,4 +2272,4 @@ showexec,flush,uhelper&lt;span class="o"&gt;=&lt;/span&gt;udisks2&lt;span class=
 &lt;/pre&gt;&lt;/div&gt;
 
 
-&lt;p&gt;Unmount and remove and plug again the USB cable of your Kindle device, and after this simple manipulations you'll  be able to copy any files to your &lt;code&gt;Kindle&lt;/code&gt;.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Alexander Kuleshov</dc:creator><pubDate>Sun, 01 Dec 2013 00:00:00 +0700</pubDate><guid>tag:,2013-12-01:0xax.github.com/kindle-and-read-only-file-system.html</guid><category>linux</category><category>amazon kindle</category></item></channel></rss>
+&lt;p&gt;Unmount and remove and plug again the USB cable of your Kindle device, and after this simple manipulations you'll  be able to copy any files to your Kindle.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Alexander Kuleshov</dc:creator><pubDate>Sun, 01 Dec 2013 00:00:00 +0700</pubDate><guid>tag:,2013-12-01:0xax.github.com/amazon-kindle-and-read-only-file-system.html</guid><category>linux</category><category>amazon kindle</category></item></channel></rss>
