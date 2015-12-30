@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+    {% if articles %}
+        {% for article in (articles_page.object_list if articles_page else articles) %}
+            <article>
+                <h2><a href="{{ SITEURL }}/{{ article.url }}" style="font-family: 'Droid Sans'; color: sienna">{{ article.title }}</a></h2>
+                {% if DISPLAY_ARTICLE_INFO_ON_INDEX %}
+                <div class="well well-sm">
+                  {% include "includes/article_info.html" %}
+                </div>
+                {% endif %}
+		<br/>
+                <div style="font-family: Droid Sans; font-size: 17px;" class="summary">{{ article.summary }}
+		  <br/>
+                  <a class="btn btn-primary btn-xs" href="{{ SITEURL }}/{{ article.url }}">
+                    Read more
+                  </a>
+                  <div style="float: right;">{% include 'includes/comment_count.html' %}</div>
+                </div>
+            </article>
+            <hr/>
+            {% endfor %}
+    {% endif %}
+    {% include 'includes/pagination.html' %}
+{% endblock content %}
