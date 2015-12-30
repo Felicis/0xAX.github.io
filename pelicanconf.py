@@ -46,10 +46,10 @@ EXTRA_PATH_METADATA = {
     'extra/email-12-24.gif': {'path': 'email-12-24.gif'}
 }
 
-TWITTER_LOGO='twitter-24.gif'
-GITHUB_LOGO='github-8-24.gif'
-LINKEDIN_LOGO='linkedin-3-24.jpg'
-STACKOVERFLOW_LOGO='stackoverflow-24.jpg'
-RSS_LOGO='rss-24.gif'
-ARCHIVES_LOGO='archive-2-24.gif'
-EMAIL_LOGO='email-12-24.gif'
+TWITTER_LOGO='extra/twitter-24.gif'
+GITHUB_LOGO='extra/github-8-24.gif'
+LINKEDIN_LOGO='extra/linkedin-3-24.jpg'
+STACKOVERFLOW_LOGO='extra/stackoverflow-24.jpg'
+RSS_LOGO='extra/rss-24.gif'
+ARCHIVES_LOGO='extra/archive-2-24.gif'
+EMAIL_LOGO='extra/email-12-24.gif'
