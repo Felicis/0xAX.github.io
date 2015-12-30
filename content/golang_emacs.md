@@ -3,7 +3,7 @@ Date: 2014-02-21
 Tags: emacs, golang
 Authors:  Alexander Kuleshov
 
-Some time ago, as you can saw from my [tweet](https://twitter.com/0xAX/status/478185552194203650/photo/1) that I eventually back to emacs. i moved back from sublime text editor to emacs for go, erlang, js programming and general usage. I installed standard go-mode with emacs package manager, configured go-mode:
+Some time ago, as you maybe saw from my [tweet](https://twitter.com/0xAX/status/478185552194203650/photo/1) that I eventually back to emacs. i moved back from sublime text editor to emacs for go, erlang, js programming and general usage. I installed standard go-mode with emacs package manager, configured go-mode:
 
 ```elisp
 (require 'go-mode)

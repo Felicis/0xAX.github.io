@@ -28,9 +28,9 @@ Single-precision floating-point float point data presented in memory:
 
 So for example if we have following number:
 
-| sign 	| exponent | mantissa
-|-------|----------|-------------------------
-| 0  	| 00001111 | 110000000000000000000000
+    | sign 	| exponent | mantissa
+    |-------|----------|-------------------------
+    | 0  	| 00001111 | 110000000000000000000000
 
 Exponent is either an 8 bit signed integer from −128 to 127 or an 8 bit unsigned integer from 0 to 255. Sign bit is zero, so we have positive number. Exponent is 00001111b or 15 in decimal. For single-precision displacement is 127, it means that we need to calculate exponent - 127 or 15 - 127 = -112. Since the normalized binary integer part of the mantissa is always equal to one, then in the mantissa is recorded only its fractional part, so mantissa or our number is 1,110000000000000000000000. Result value will be:
 
@@ -86,7 +86,9 @@ Arithmetic instructions:
 * `FIMUL` - multiply integer and floating point
 * `FIDIV` - device integer and floating point
 
-and etc... FPU has eight 10 byte registers organized in a ring stack. Top of the stack - register ST(0), other registers are ST(1), ST(2) ... ST(7). We usually uses it when we are working with floating point data. For example:
+and etc... FPU has eight 10 byte registers organized in a ring stack. Top of the stack - register ST(0), other registers are ST(1), ST(2) ... ST(7). We usually uses it when we are working with floating point data.
+
+For example:
 
 ```assembly
 section .data

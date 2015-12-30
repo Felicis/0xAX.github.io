@@ -3,7 +3,7 @@ Date: 2014-01-13
 Tags: haskell
 Authors:  Alexander Kuleshov
 
-Some times ago i encountered with question: How to get function execution time in Haskell program? I asked this question at [StackOverflow](http://stackoverflow.com/questions/6766450/haskell-function-execution-time), and got some useful answers. Here i will try to describe how to do it. For example we have simple haskell program which will calculate sum of prime numbers which are between 0 and 10000. Something like this:
+Some times ago I encountered with question: How to get function execution time in Haskell program? I asked this question at [StackOverflow](http://stackoverflow.com/questions/6766450/haskell-function-execution-time), and got some useful answers. Here i will try to describe how to do it. For example we have simple haskell program which will calculate sum of prime numbers which are between 0 and 10000. Something like this:
 
 ```haskell
 module TimingTest where
