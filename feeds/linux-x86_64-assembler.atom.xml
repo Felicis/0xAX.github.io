@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Code As Art</title><link href="/" rel="alternate"></link><link href="None/feeds/linux-x86_64-assembler.atom.xml" rel="self"></link><id>/</id><updated>2014-12-01T00:00:00+06:00</updated><entry><title>Say hello to x86_64 Assembly [part 8]</title><link href="/say-hello-to-x86_64-assembly-part-8.html" rel="alternate"></link><published>2014-12-01T00:00:00+06:00</published><author><name>Alexander Kuleshov</name></author><id>tag:,2014-12-01:say-hello-to-x86_64-assembly-part-8.html</id><summary type="html">&lt;p&gt;It is eight and final part of Say hello to x86_64 Assembly and here we will take a look on how to work with non-integer numbers in assembler. There are a couple of ways how to work with floating point data:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;fpu&lt;/li&gt;
+&lt;li&gt;sse&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;First of all let's look how floating point number stored in memory. There are three floating point data types:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;single-precision&lt;/li&gt;
+&lt;li&gt;double-precision&lt;/li&gt;
+&lt;li&gt;double-extended precision&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;As Intel's 64-ia-32-architecture-software-developer-vol-1-manual described:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;The data formats for these data types correspond directly to formats specified in the IEEE Standard 754 for Binary Floating-Point Arithmetic.
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Single-precision floating-point float point data presented in memory:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;sign - 1 bit&lt;/li&gt;
+&lt;li&gt;exponent - 8 bits&lt;/li&gt;
+&lt;li&gt;mantissa - 23 bits&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;So for example if we have following number:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;sign&lt;/th&gt;
+&lt;th&gt;exponent&lt;/th&gt;
+&lt;th&gt;mantissa&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;0&lt;/td&gt;
+&lt;td&gt;00001111&lt;/td&gt;
+&lt;td&gt;110000000000000000000000&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Exponent is either an 8 bit signed integer from −128 to 127 or an 8 bit unsigned integer from 0 to 255. Sign bit is zero, so we have positive number. Exponent is 00001111b or 15 in decimal. For single-precision displacement is 127, it means that we need to calculate exponent - 127 or 15 - 127 = -112. Since the normalized binary integer part of the mantissa is always equal to one, then in the mantissa is recorded only its fractional part, so mantissa or our number is 1,110000000000000000000000. Result value will be:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;value = mantissa * 2^-112
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Double precision number is 64 bit of memory where:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;sign - 1 bit&lt;/li&gt;
+&lt;li&gt;exponent - 11 bit&lt;/li&gt;
+&lt;li&gt;mantissa - 52 bit&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Result number we can get by:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;value = (-1)^sign * (1 + mantissa / 2 ^ 52) * 2 ^ exponent - 1023)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Extended precision is 80 bit numbers where:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;sign - 1 bit&lt;/li&gt;
+&lt;li&gt;exponent - 15 bit&lt;/li&gt;
+&lt;li&gt;mantissa - 112 bit&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Read more about it - &lt;a href="https://en.wikipedia.org/wiki/Extended_precision"&gt;here&lt;/a&gt;. Let's look at simple example.&lt;/p&gt;
+&lt;h2&gt;x87 FPU&lt;/h2&gt;
+&lt;p&gt;The x87 Floating-Point Unit (FPU) provides high-performance floating-point processing. It supports the floating-point, integer, and packed BCD integer data types and the floating-point processing algorithms. x87 provides following instructions set:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Data transfer instructions&lt;/li&gt;
+&lt;li&gt;Basic arithmetic instructions&lt;/li&gt;
+&lt;li&gt;Comparison instructions&lt;/li&gt;
+&lt;li&gt;Transcendental instructions&lt;/li&gt;
+&lt;li&gt;Load constant instructions&lt;/li&gt;
+&lt;li&gt;x87 FPU control instructions&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Of course we will not see all instructions here provided by x87, for additional information see 64-ia-32-architecture-software-developer-vol-1-manual Chapter 8. There are a couple of data transfer instructions:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;FDL&lt;/code&gt; - load floating point&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FST&lt;/code&gt; - store floating point (in ST(0) register)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FSTP&lt;/code&gt; - store floating point and pop (in ST(0) register)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Arithmetic instructions:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;FADD&lt;/code&gt; - add floating point&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FIADD&lt;/code&gt; - add integer to floating point&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FSUB&lt;/code&gt; - subtract floating point&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FISUB&lt;/code&gt; - subtract integer from floating point&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FABS&lt;/code&gt; - get absolute value&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FIMUL&lt;/code&gt; - multiply integer and floating point&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;FIDIV&lt;/code&gt; - device integer and floating point&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;and etc... FPU has eight 10 byte registers organized in a ring stack. Top of the stack - register ST(0), other registers are ST(1), ST(2) ... ST(7). We usually uses it when we are working with floating point data. For example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;section .data
+    x dw 1.0
+
+fld dword [x]
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;pushes value of x to this stack. Operator can be 32bit, 64bit or 80bit. It works as usual stack, if we push another value with fld, x value will be in ST(1) and new value will be in ST(0). FPU instructions can use these registers, for example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;;;
+;; adds st0 value to st3 and saves it in st0
+;;
+fadd st0, st3
+
+;;
+;; adds x and y and saves it in st0
+;;
+fld dword [x]
+fld dword [y]
+fadd
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Let's look on simple example. We will have circle radius and calculate circle square and print it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;extern printResult
+
+section .data
+        radius    dq  1.7
+        result    dq  0
+
+        SYS_EXIT  equ 60
+        EXIT_CODE equ 0
+
+global _start
+section .text
+
+_start:
+        fld qword [radius]
+        fld qword [radius]
+        fmul
+
+        fldpi
+        fmul
+        fstp qword [result]
+
+        mov rax, 0
+        movq xmm0, [result]
+        call printResult
+
+        mov rax, SYS_EXIT
+        mov rdi, EXIT_CODE
+        syscall
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Let's try to understand how it works: First of all there is data section with predefined radius data and result which we will use for storing result. After this 2 constants for calling exit system call. Next we see entry point of program - _start. There we stores radius value in st0 and st1 with fld instruction and multiply this two values with fmul instruction. After this operations we will have result of radius on radius multiplication in st0 register. Next we load The number π with fldpi instruction to the st0 register, and after it radius * radius value will be in st1 register. After this execute multiplication with fmul on st0 (pi) and st1 (value of radius * radius), result will be in st0 register. Ok, now we have circle square in st0 register and can extract it with fstp instruction to the result. Next point is to pass result to the C function and call it. Remember we call C function from assembly code in previous blog post. We need to know x86_64 calling convention. In usual way we pass function parameters through registers rdi (arg1), rsi (arg2) and etc..., but here is floating point data. There is special registers: xmm0 - xmm15 provided by sse. First of all we need to put number of xmmN register to rax register (0 for our case), and put result to xmm0 register. Now we can call C function for printing result:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="cp"&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+
+&lt;span class="k"&gt;extern&lt;/span&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;printResult&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;double&lt;/span&gt; &lt;span class="n"&gt;result&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+
+&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;printResult&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;double&lt;/span&gt; &lt;span class="n"&gt;result&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;Circle radius is - %f&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;result&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;We can build it with:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="n"&gt;build&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;gcc&lt;/span&gt;  &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;g&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;c&lt;/span&gt; &lt;span class="n"&gt;circle_fpu_87c&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;c&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;o&lt;/span&gt; &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;o&lt;/span&gt;
+    &lt;span class="n"&gt;nasm&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;f&lt;/span&gt; &lt;span class="n"&gt;elf64&lt;/span&gt; &lt;span class="n"&gt;circle_fpu_87&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;asm&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;o&lt;/span&gt; &lt;span class="n"&gt;circle_fpu_87&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;o&lt;/span&gt;
+    &lt;span class="n"&gt;ld&lt;/span&gt;   &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="kd"&gt;dynamic&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;linker&lt;/span&gt; &lt;span class="sr"&gt;/lib64/&lt;/span&gt;&lt;span class="n"&gt;ld&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;linux&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;x86&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;64&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;so&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;lc&lt;/span&gt; &lt;span class="n"&gt;circle_fpu_87&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;o&lt;/span&gt;  &lt;span class="n"&gt;c&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="na"&gt;o&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;o&lt;/span&gt; &lt;span class="n"&gt;testFloat1&lt;/span&gt;
+
+&lt;span class="n"&gt;clean&lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;rm&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;rf&lt;/span&gt; &lt;span class="o"&gt;*.&lt;/span&gt;&lt;span class="n"&gt;o&lt;/span&gt;
+    &lt;span class="n"&gt;rm&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="n"&gt;rf&lt;/span&gt; &lt;span class="n"&gt;testFloat1&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And run:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="result" src="http://1.bp.blogspot.com/-yBn1V2mJ3no/VJgkuudOQRI/AAAAAAAAAIc/rqVNUpX87Og/s1600/Screenshot%2Bfrom%2B2014-12-22%2B20%3A02%3A56.png" /&gt;&lt;/p&gt;</summary><category term="linux"></category><category term="x86_64"></category><category term="assembler"></category></entry></feed>
