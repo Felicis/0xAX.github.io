@@ -11,11 +11,10 @@
                 {% endif %}
 		<br/>
                 <div style="font-family: Droid Sans; font-size: 17px;" class="summary">{{ article.summary }}
-		  <br/>
-                  <a class="btn btn-primary btn-xs" href="{{ SITEURL }}/{{ article.url }}">
+                  <a style="float: right;" class="btn btn-primary btn-xs" href="{{ SITEURL }}/{{ article.url }}">
                     Read more
                   </a>
-                  <div style="float: right;">{% include 'includes/comment_count.html' %}</div>
+		  <br/>
                 </div>
             </article>
             <hr/>
