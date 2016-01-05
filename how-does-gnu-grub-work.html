@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Tangerine">
+    <title>How does GNU GRUB work - Just a Memo</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <link href="./extra/favicon.ico" rel="icon">
+
+<link rel="canonical" href="./how-does-gnu-grub-work.html">
+
+        <meta name="author" content="Alexander Kuleshov" />
+        <meta name="keywords" content="linux,bootloader" />
+        <meta name="description" content="This blog post is closely related with my interest in low-level stuff. As you already may know, I&#39;ve started to be interested in such things like: How N works, where the N is something like - what does occur when we turn on the computer, pressing key on keyboard, how ..." />
+
+        <meta property="og:site_name" content="Just a Memo" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="How does GNU GRUB work"/>
+        <meta property="og:url" content="./how-does-gnu-grub-work.html"/>
+        <meta property="og:description" content="This blog post is closely related with my interest in low-level stuff. As you already may know, I&#39;ve started to be interested in such things like: How N works, where the N is something like - what does occur when we turn on the computer, pressing key on keyboard, how ..."/>
+        <meta property="article:published_time" content="2016-01-05" />
+            <meta property="article:tag" content="linux" />
+            <meta property="article:tag" content="bootloader" />
+            <meta property="article:author" content="Alexander Kuleshov" />
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="./theme/css/bootstrap.min.css" type="text/css"/>
+    <link href="./theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="./theme/css/pygments/monokai.css" rel="stylesheet">
+    <link rel="stylesheet" href="./theme/css/style.css" type="text/css"/>
+
+        <link href="./feeds/all.atom.xml" type="application/atom+xml" rel="alternate"
+              title="Just a Memo ATOM Feed"/>
+
+
+
+</head>
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="./" style="color: sienna; font-family: 'Droid Sans'; font-size: 25px;" class="navbar-brand">
+Just a Memo            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+	      <li>
+		<a href="https://twitter.com/0xAX" style="" class="navbar-brand">
+                  <img src="extra/twitter-24.gif" width=""/>
+		</a>
+	      </li>
+	      <li>
+  		<a href="https://github.com/0xAX" style="" class="navbar-brand">
+                  <img src="extra/github-8-24.gif" width=""/>
+		</a>
+	      </li>
+	      <li>
+		<a href="https://kz.linkedin.com/in/alexander-kuleshov-301b7824"
+		   style="" class="navbar-brand">
+                  <img src="extra/linkedin-3-24.jpg" width=""/>
+		</a>
+	      </li>
+	      <li>
+		<a href="http://stackoverflow.com/users/274299/0xax" style="" class="navbar-brand">
+                  <img src="extra/stackoverflow-24.jpg" width=""/>
+		</a>
+	      </li>
+	      <li>
+	      <a href="http://0xax.github.io/atom" style="" class="navbar-brand">
+                <img src="extra/rss-24.gif" width=""/>
+              </a>
+	      </li>
+	      <li>
+		<a href="mailto:kuleshovmail@gmail.com" class="navbar-brand">
+                  <img src="extra/email-12-24.gif" width=""/>
+		</a>
+	      </li>
+	      <li>
+	      <a href="./archives.html" class="navbar-brand">
+                <img src="extra/archive-2-24.gif" width=""/>
+              </a>
+	      </li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+<!-- Banner -->
+<!-- End Banner -->
+<div class="container">
+    <div class="row">
+        <div class="col-lg-12">
+    <section id="content">
+        <article>
+            <header style="color: #A0522D;" class="page-header">
+                <h1 style="color: #A0522D;">
+                    <a href="./how-does-gnu-grub-work.html"
+                       rel="bookmark" style="color: #A0522D;"
+                       title="Permalink to How does GNU GRUB work">
+                        How does GNU GRUB work
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content" style="font-family: 'Droid Sans'; font-size: 17px;">
+                <p>This blog post is closely related with my interest in low-level stuff. As you already may know, I've started to be interested in such things like: How <code>N</code> works, where the <code>N</code> is something like - what does occur when we turn on the computer, pressing key on keyboard, how does an operating system load a program and many many more. I have found answers on some of my questions. You can look on the set if
+blog <a href="http://0xax.github.io/tag/assembler.html">posts</a> which are decribe some aspects of the <a href="https://en.wikipedia.org/wiki/Assembly_language">assembly</a> programming or the <a href="https://0xax.gitbooks.io/linux-insides/content/index.html">linux-insides</a> book which describes internals of the Linux kernel.</p>
+<p>Yes. This answered on some of my questions, but not at all. Lately, besides the Linux kernel, I've also learned internals of the <a href="https://en.wikipedia.org/wiki/GNU_GRUB">GNU GRUB</a>. In the previous year I've got many thank you words from different people for the <code>linux-insides</code>. Seems that low-level stuff is interesting not only for me and I decided to write this blog post which will cover some parts of the <code>GNU GRUB</code> and we will see answer on the question which is in the title of this post - How GNU GRUB works. Hope, that it will be useful for somebody.</p>
+<p>If you use Linux, you likely know about <code>GNU GRUB</code>. But just in case, wikipedia says that:</p>
+<blockquote>
+<p>GNU GRUB (short for GNU GRand Unified Bootloader) is a boot loader package from the GNU Project</p>
+</blockquote>
+<p>So, the GNU GRUB is a bootloader. Main point of a bootloader is to load an operating system kernel and to transfer control to it. GNU GRUB has many features like support of different types of executable file formats, dynamic configuration, graphical menu interface, support for different types of file systems and etc.</p>
+<p>So the point of the bootloader is clear - to load an operating system kernel. In this post we will see how the GNU GRUB loads the Linux kernel. But before this let's take a little look on architecture of the GNU GRUB. Even if you are newbie Linux user, you can guess that all <code>boot</code> related data is placed in the <code>/boot</code> directory. For me it looks like:</p>
+<p><img alt="boot-dir" src="http://s30.postimg.org/3mfl4a681/2016_01_02_193818_933x47_scrot.png" /></p>
+<p>This directory contains two <a href="https://en.wikipedia.org/wiki/Initrd">initrd</a> images, the Linux kernel image and the <code>grub</code> directory which contains GNU GRUB related data:</p>
+<p><img alt="boot-grub-dir" src="http://s17.postimg.org/bgttwn3u7/ls_boot.png" /></p>
+<p>Directory with fonts, GNU GRUB configuration file, themes, locales, the <code>grubenv</code> file that contains GNU GRUB environment variables which are can be used in runtime and the <code>i386-pc</code> directory which contains GNU GRUB images and modules. Content of the <code>i386-pc</code> directory is the most interesting for us. Yes the <code>/boot/grub</code> directory contains many other interesting directories/files besides the <code>/boot/grub</code> directory, but this post will not cover topics like how to make GNU GRUB menu beautiful, readable and etc. If we will open the <code>/boot/grub/i386-pc</code> directory, we will find three types of files there:</p>
+<ul>
+<li><code>*.lst</code> files - contain lists of available options depends on file. For example, the <code>/boot/grub/i386-pc/video.lst</code> contains list of available video modes or the <code>/boot/grub/i386-pc/fs.list</code> file contains information about supported file systems;</li>
+<li><code>*.mod</code> files - 32-bit <a href="https://en.wikipedia.org/wiki/Executable_and_Linkable_Format">ELF</a> files which provide additional functional for GNU GRUB. For example, the <code>/boot/grub/i386-pc/acpi.mod</code> adds support of the <a href="https://en.wikipedia.org/wiki/Advanced_Configuration_and_Power_Interface">Advanced Configuration and Power Interface</a> which is used to perform various power-related functions or <code>/boot/grub/i386-pc/ext2.mod</code> provides support for <a href="https://en.wikipedia.org/wiki/Ext2">ext2</a> file system;</li>
+<li><code>*.img</code> files - only two files: <code>/boot/grub/i386-pc/boot.img</code> and <code>/boot/grub/i386-pc/core.img</code>. We need to look closer on this file.</li>
+</ul>
+<p>The first <code>boot.img</code> file is the entry of the bootloader on a <a href="https://en.wikipedia.org/wiki/BIOS">PC BIOS</a> system. The content of this file is written to the first sector of the disk or in the <a href="https://en.wikipedia.org/wiki/Master_boot_record">Master boot record</a>. The main point of the <code>boot.img</code> is to load first sector (512 bytes) of the <code>core.img</code> which will continue to do main job of the bootloader. As <code>boot.img</code> is in the master boot record, it must meet several conditions. First of all its size must be 512-bytes and the last two bytes must be <code>0xAA55</code>. We can see that <code>boot.img</code> is 512 bytes size file:</p>
+<p><img alt="boot.img" src="http://s2.postimg.org/7e8s3cuzd/boot_img.png" /></p>
+<p>and contains two magic bytes in the end:</p>
+<div class="highlight"><pre>~$ hexdump -s 510 /boot/grub/i386-pc/boot.img
+00001fe aa55
+</pre></div>
+
+
+<p>Besides two magic bytes, the <code>Master boot record</code> must contain bootstrap code which will load second stage of the bootloader which can be much more than 512 bytes and <a href="https://en.wikipedia.org/wiki/Partition_table">partition table</a> with four 16-bytes partition entries. Generall structure of the <code>MBR</code> must be like this:</p>
+<div class="highlight"><pre>0   +--------------------+
+    |                    |
+    |   Bootstrap code   |
+446 |                    |
+    |                    |
+    |  Partition entry 1 |
+    |  Partition entry 2 |
+    |  Partition entry 3 |
+    |  Partition entry 4 |
+510 |        0x55        |
+511 |        0xaa        |
+512 +--------------------+
+</pre></div>
+
+
+<p>The second <code>core.img</code> file does the main job for us. It contains file system drivers, so it can load configuration from the <code>/boot/grub/grub.cfg</code> file and modules. The main point of the <code>core.img</code> is to transfer control to the last - second stage of the grub. At this moment, the GNU GRUB will have loaded modules, so it will know everything about operating system kernels which are needed to load. It draws menu, reacts on selection and etc.</p>
+<p>Before we will start to dive into low-level source code of the GNU GRUB. We need to understand how all of this data occurs on a disk of computer. Besides bootloader functions, the GNU GRUB provides a rich set of utils:</p>
+<p><img alt="grub-utils" src="http://s22.postimg.org/z9plrxbld/grub_utils.png" /></p>
+<p>And one of this util may help us to install GNU GRUB on a computer. The name of this util is - <code>grub-install</code>. As we can read in the <code>grub-instal</code> manual page. The <code>grub-install</code> util:</p>
+<blockquote>
+<p>grub-install - install GRUB on your drive</p>
+</blockquote>
+<p>We just saw a little about GNU GRUB related files and now is time to see how the <code>grub-install</code> installs master boot record and this files. Let's look on the source code if the <code>grub-install</code>.</p>
+<h2>The grub-install util</h2>
+<p>Implementation of the GNU GRUB utils is located in the <code>utils</code> directory. In our case, implementation of the <code>grub-install</code> utils is in the <code>grub-install.c</code>. If we will look on its <code>main</code> function, we will see that it starts from the call of the <code>grub_util_host_init</code> function which defined in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/osdep/basic/init.c">grub-core/osdep/basic/init.c</a> source code file and produces standard stuff for a C programs, like the call of the <code>set_program_name</code>, setting locale and etc.</p>
+<p>After the first inital initialization, we can see the call of the <code>arg_parse</code> function which as we may understand from the name - parses command line arguments of the <code>grub-install</code> util. We will not dive into details of implementation of the <code>argp_parse</code> function in ths post. I don't know how about you, but now, its interesting for me only low-level stuff in the GRUB. At the next step as we parsed command line arguments of the <code>grub-install</code> util, we start to check these arguments and do something depend on their values. First of all, we check the <code>-v</code> or <code>--verbose</code> flag which allows us to see verbose output of the <code>grub-instal</code> work. If this flag is set we set <code>debug=all</code> environment variable of GRUB with the call of the <code>grub_env_set</code> function:</p>
+<div class="highlight"><pre>  <span class="k">if</span> <span class="p">(</span><span class="n">verbosity</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">grub_env_set</span> <span class="p">(</span><span class="s">&quot;debug&quot;</span><span class="p">,</span> <span class="s">&quot;all&quot;</span><span class="p">);</span>
+</pre></div>
+
+
+<p>GRUB stores its environment variables in the hashtable which is represented by the following structure:</p>
+<div class="highlight"><pre><span class="k">struct</span> <span class="n">grub_env_context</span>
+<span class="p">{</span>
+  <span class="k">struct</span> <span class="n">grub_env_var</span> <span class="o">*</span><span class="n">vars</span><span class="p">[</span><span class="n">HASHSZ</span><span class="p">];</span>
+  <span class="k">struct</span> <span class="n">grub_env_context</span> <span class="o">*</span><span class="n">prev</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+
+
+<p>The implementation of the <code>grub_env_set</code> function is simple. It just calculates index in the <code>grub_env_context</code> hashtable and stores a given variable in it. After this we can see the call of the:</p>
+<div class="highlight"><pre><span class="n">grub_util_load_config</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">config</span><span class="p">);</span>
+</pre></div>
+
+
+<p>function. This function just fills the <code>grub_util_config</code> structure from the GRUB configuration file (located in the <code>/etc/default/grub</code>). This structure consists from two fields. Both fields are depends on the following environment variables:</p>
+<ul>
+<li><code>GRUB_ENABLE_CRYPTODISK</code> - allows to install GRUB on the encrypted disk.</li>
+<li><code>GRUB_DISTRIBUTOR</code> - provides string which is associated with the distributor. For example, for me now it is:</li>
+</ul>
+<div class="highlight"><pre><span class="nv">$ </span>cat /etc/default/grub <span class="p">|</span> grep DIST
+<span class="nv">GRUB_DISTRIBUTOR</span><span class="o">=</span><span class="s2">&quot;Arch&quot;</span>
+</pre></div>
+
+
+<p>After this we check the <code>GRUB_DISTRIBUTOR</code> value and if we've found it in the GRUB configuration file we save it in the <code>bootloader_id</code> variable. In other way the <code>bootloader_id</code> will contain <code>"grub"</code> string by default. At the next step we need to check current platform and exit in a failure case. The <code>grub-install</code> util does it with the call of the <code>get_default_platform</code> function. This function checks <code>gcc</code> directives and returns our platform:</p>
+<div class="highlight"><pre><span class="k">static</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span>
+<span class="nf">get_default_platform</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="cp">#ifdef __powerpc__</span>
+   <span class="k">return</span> <span class="s">&quot;powerpc-ieee1275&quot;</span><span class="p">;</span>
+   <span class="p">...</span>
+   <span class="p">...</span>
+   <span class="p">...</span>
+<span class="cp">#elif defined (__amd64__) || defined (__x86_64__) || defined (__i386__)</span>
+   <span class="k">return</span> <span class="n">grub_install_get_default_x86_platform</span> <span class="p">();</span>
+<span class="cp">#else</span>
+   <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="cp">#endif</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>The <code>grub_install_get_default_x86_platform ()</code> function returns <code>x86_64-efi</code>, <code>i386-efi</code> or just <code>i386-pc</code> on <code>x86_64</code> platform. So, now we know target machine and now we need to get the path of directory where <code>grub-insta</code> util will install its modules. In our case it will be <code>/lib/grub/i386-pc</code> and the <code>grub_install_source_directory</code> variable will contain this path. Besides the name of the target platform, we need to get information about this platform. The <code>grub-install</code> util will do it with the call of the <code>grub_install_get_target()</code> function. The main point of this function is to return item from the <code>platforms</code> array:</p>
+<div class="highlight"><pre><span class="k">static</span> <span class="k">struct</span>
+<span class="p">{</span>
+  <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">cpu</span><span class="p">;</span>
+  <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">platform</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">platforms</span><span class="p">[</span><span class="n">GRUB_INSTALL_PLATFORM_MAX</span><span class="p">]</span> <span class="o">=</span>
+  <span class="p">{</span>
+    <span class="p">[</span><span class="n">GRUB_INSTALL_PLATFORM_I386_PC</span><span class="p">]</span> <span class="o">=</span>          <span class="p">{</span> <span class="s">&quot;i386&quot;</span><span class="p">,</span>    <span class="s">&quot;pc&quot;</span>        <span class="p">},</span>
+    <span class="p">[</span><span class="n">GRUB_INSTALL_PLATFORM_I386_EFI</span><span class="p">]</span> <span class="o">=</span>         <span class="p">{</span> <span class="s">&quot;i386&quot;</span><span class="p">,</span>    <span class="s">&quot;efi&quot;</span>       <span class="p">},</span>
+    <span class="p">[</span><span class="n">GRUB_INSTALL_PLATFORM_I386_QEMU</span><span class="p">]</span> <span class="o">=</span>        <span class="p">{</span> <span class="s">&quot;i386&quot;</span><span class="p">,</span>    <span class="s">&quot;qemu&quot;</span>      <span class="p">},</span>
+    <span class="p">...</span>
+    <span class="p">...</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>and print information about it:</p>
+<div class="highlight"><pre><span class="p">{</span>
+    <span class="kt">char</span> <span class="o">*</span><span class="n">platname</span> <span class="o">=</span> <span class="n">grub_install_get_platform_name</span> <span class="p">(</span><span class="n">platform</span><span class="p">);</span>
+    <span class="n">fprintf</span> <span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s">&quot;Installing for %s platform.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">),</span> <span class="n">platname</span><span class="p">);</span>
+    <span class="n">free</span> <span class="p">(</span><span class="n">platname</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>At the next step we need to select GRUB's disk module depends on the platform name. In our case it will be <code>biosdisk</code> module:</p>
+<div class="highlight"><pre><span class="k">switch</span> <span class="p">(</span><span class="n">platform</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">case</span> <span class="nl">GRUB_INSTALL_PLATFORM_I386_PC</span><span class="p">:</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">disk_module</span><span class="p">)</span>
+    <span class="n">disk_module</span> <span class="o">=</span> <span class="n">xstrdup</span> <span class="p">(</span><span class="s">&quot;biosdisk&quot;</span><span class="p">);</span>
+      <span class="k">break</span><span class="p">;</span>
+      <span class="p">...</span>
+      <span class="p">...</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>The next step after we have selected disk module is initialization of all modules:</p>
+<div class="highlight"><pre>  <span class="n">grub_init_all</span> <span class="p">();</span>
+  <span class="n">grub_gcry_init_all</span> <span class="p">();</span>
+  <span class="n">grub_hostfs_init</span> <span class="p">();</span>
+  <span class="n">grub_host_init</span> <span class="p">();</span>
+</pre></div>
+
+
+<p>The source code of GRUB modules is located in different parts of GRUB source code, but each module contains definition of the <code>GRUB_MOD_INIT</code> and <code>GRUB_MOD_FINI</code> macros which make all initialization stuff. After all modules are initialzed we are copying/installing to the <code>/boot/grub</code> directlry all GRUB files (modules, locales, themes and etc.) to the source directory by the call of the:</p>
+<div class="highlight"><pre>  <span class="n">grub_install_copy_files</span> <span class="p">(</span><span class="n">grub_install_source_directory</span><span class="p">,</span>
+               <span class="n">grubdir</span><span class="p">,</span> <span class="n">platform</span><span class="p">);</span>
+</pre></div>
+
+
+<p>function. After all of this manipulations, the <code>grub-install</code> util executes many different thing. It creates the <code>/boot/grub/envblk</code> file which is the GRUB environment block that is stores GRUB's environment variables. You can use the <code>grub-editevn --list</code> util to lust the GRUB environment variables. At the next step, the <code>grub-install</code> checks the given divice, tries to understand type of files system on a given device and loads module for the certain file system type. It loads the module which provides functional for a disk reading. You can remember that it is the <code>biosdisk</code> for us. But the main point of the <code>grub-install</code> utils is to install <a href="https://en.wikipedia.org/wiki/Master_boot_record">MBR</a>, the <code>core.img</code> and the <code>kernel.img</code>. The most interesting part for us is the call of the:</p>
+<div class="highlight"><pre><span class="k">if</span> <span class="p">(</span><span class="n">install_bootsector</span><span class="p">)</span>
+    <span class="n">grub_util_bios_setup</span> <span class="p">(</span><span class="n">platdir</span><span class="p">,</span> <span class="s">&quot;boot.img&quot;</span><span class="p">,</span> <span class="s">&quot;core.img&quot;</span><span class="p">,</span>
+                          <span class="n">install_drive</span><span class="p">,</span> <span class="n">force</span><span class="p">,</span>
+                          <span class="n">fs_probe</span><span class="p">,</span> <span class="n">allow_floppy</span><span class="p">,</span> <span class="n">add_rs_codes</span><span class="p">);</span>
+</pre></div>
+
+
+<p>function. The <code>grub_util_bios_setup</code> function defined in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/util/setup.c">util/setup.c</a> source code file and its main point is to setup MBR. This function takes eight arguments:</p>
+<ul>
+<li><code>platdir</code> - platform dependend directory wich contains GRUB modules, image and etc. (For example - <code>/lib/grub/i386-pc</code>);</li>
+<li>GRUB boot image;</li>
+<li>GRUB core image;</li>
+<li><code>install_drive</code> - name of the device where to install GRUB;</li>
+<li><code>force</code> - install or not if any problems are presented;</li>
+<li><code>fs_probe</code> - allows GRUB to skip file system probes for the give divice;</li>
+<li><code>allow_floppy</code> - makes a drive bootable as floppy;</li>
+<li><code>add_rs_codes</code> - shows apply or not <a href="https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction">reed-solomon</a> codes during <code>core-img</code> embbeding.</li>
+</ul>
+<p>The <code>grub_util_bios_setup</code> function reads the <code>boot.img</code> and the <code>core.img</code> from the disk, sets the root device, copies <a href="https://en.wikipedia.org/wiki/Partition_table">partition table</a> (will see more about it later), reads partition table, checks errors and writes the <code>core.img</code> and the <code>boot.img</code>:</p>
+<div class="highlight"><pre><span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">nsec</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+    <span class="n">grub_disk_write</span> <span class="p">(</span><span class="n">dest_dev</span><span class="o">-&gt;</span><span class="n">disk</span><span class="p">,</span> <span class="n">sectors</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span>
+                     <span class="n">GRUB_DISK_SECTOR_SIZE</span><span class="p">,</span>
+                     <span class="n">core_img</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="n">GRUB_DISK_SECTOR_SIZE</span><span class="p">);</span>
+<span class="p">...</span>
+<span class="p">...</span>
+<span class="p">...</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">grub_disk_write</span> <span class="p">(</span><span class="n">dest_dev</span><span class="o">-&gt;</span><span class="n">disk</span><span class="p">,</span> <span class="n">BOOT_SECTOR</span><span class="p">,</span>
+                     <span class="mi">0</span><span class="p">,</span> <span class="n">GRUB_DISK_SECTOR_SIZE</span><span class="p">,</span> <span class="n">boot_img</span><span class="p">))</span>
+    <span class="n">grub_util_error</span> <span class="p">(</span><span class="s">&quot;%s&quot;</span><span class="p">,</span> <span class="n">grub_errmsg</span><span class="p">);</span>
+</pre></div>
+
+
+<p>That's all. Now we have installed master boot record and other boot-related GRUB parts on our machine.</p>
+<h2>Booting process</h2>
+<p>The booting process starts when BIOS reads first sector (first 512 bytes) from a disk and loads it into memory by <code>0x0000:0x7c000</code> address. The GNU GRUB MBR code is implemented in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/boot/i386/pc/boot.S">grub-core/boot/i386/pc/boot.S</a> assembly source code file. As I already wrote above, the main point of the master boot record bootstrap code is to load second second sector from disk and control transfer to it. Besides this, bootstrap code does not do almost anything, because as you remember it is very small, only 512 bytes size. Let's look on the implementation of the bootstrap code.</p>
+<p>In the beginning of the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/boot/i386/pc/boot.S">grub-core/boot/i386/pc/boot.S</a> source code file we can see definition of the global labels and the jump to the local label:</p>
+<div class="highlight"><pre><span class="bp">.</span><span class="nx-Member">globl</span> <span class="nx">_start</span><span class="p">,</span> <span class="nx">start</span><span class="p">;</span>
+<span class="nx">_start</span><span class="p">:</span>
+<span class="nx">start</span><span class="p">:</span>
+    <span class="nx">jmp</span> <span class="kd">LOCAL</span><span class="p">(</span><span class="nx">after_BPB</span><span class="p">)</span>
+    <span class="nx">nop</span>
+</pre></div>
+
+
+<p>The <code>LOCAL</code> macro defined in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/include/grub/symbol.h">include/grub/symbol.h</a> header file and expands to the concatenation of the <code>L_</code> and given symbol:</p>
+<div class="highlight"><pre><span class="cp">#define LOCAL(sym)  L_ ## sym</span>
+</pre></div>
+
+
+<p>in our case it will expand to the <code>L_after_BPB</code> label. This label represents the <a href="https://en.wikipedia.org/wiki/BIOS_parameter_block">BIOS parameter block</a> which contains information about physycal layout of a disk. At the start of the <code>L_after_BPB</code> label we disable interrupts with the <code>cli</code> instruction to prevent erasing of the <code>dl</code> register which stores number of hard drive from which we have loaded. After this we test value of the <code>dl</code> register and set to <code>0x80</code> (first hard drive in the system) if buggy BIOS did not set it:</p>
+<div class="highlight"><pre>    cli
+    testb   $0x80, %dl
+    jz      2f
+2:
+    movb    $0x80, %dl
+</pre></div>
+
+
+<p>At the next step we set data segment and stack segment registers to the known value - it is zero in our case, setup stack pointer to the top of the stack segment (<code>0x2000</code>) and enable interrupts again, because from this point we are safe now:</p>
+<div class="highlight"><pre><span class="x">    xorw    %ax, %ax</span>
+<span class="x">    movw    %ax, %ds</span>
+<span class="x">    movw    %ax, %ss</span>
+
+<span class="x">    movw    </span><span class="p">$</span><span class="nv">GRUB_BOOT_MACHINE_STACK_SEG</span><span class="x">, %sp</span>
+<span class="x">    sti     /* we&#39;re safe again */</span>
+</pre></div>
+
+
+<p>We just made enabled interrupts, so we can print <code>Welcome</code> message to the screen with the <code>MSG</code> macro:</p>
+<div class="highlight"><pre><span class="nx">MSG</span><span class="p">(</span><span class="nx">notification_string</span><span class="p">)</span>
+
+<span class="vi">#define</span> <span class="nx">MSG</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span>  <span class="nx">movw</span> <span class="nv">$x</span><span class="p">,</span> <span class="o">%</span><span class="nx">si</span><span class="p">;</span> <span class="nx">call</span> <span class="kd">LOCAL</span><span class="p">(</span><span class="nx">message</span><span class="p">)</span>
+
+<span class="nx">notification_string</span><span class="p">:</span>    <span class="bp">.</span><span class="nx-Member">asciz</span> <span class="s2">&quot;GRUB &quot;</span>
+
+<span class="kd">LOCAL</span><span class="p">(</span><span class="nx">message</span><span class="p">):</span>
+    <span class="nx">lodsb</span>           <span class="cm">/* loads character from %si to %al */</span>
+    <span class="nx">cmpb</span>    <span class="err">$</span><span class="mi">0</span><span class="p">,</span> <span class="o">%</span><span class="nx">al</span> <span class="cm">/* check that we are at the end of string */</span>
+    <span class="nx">jne</span> <span class="mi">1</span><span class="nx">b</span>          <span class="cm">/* display character if we are not at the end of string */</span>
+    <span class="nx">ret</span>
+
+<span class="cm">/* %si stores pointer to the notification_string */</span>
+<span class="cm">/* %bx represents foreground color */</span>
+<span class="cm">/* %ah number of BIOS service */</span>
+<span class="cm">/* int $10 - http://www.ctyme.com/intr/rb-0106.htm */</span>
+<span class="mi">1</span><span class="p">:</span>  <span class="nx">movw</span>    <span class="err">$</span><span class="mh">0x0001</span><span class="p">,</span> <span class="o">%</span><span class="nx">bx</span>
+    <span class="nx">movb</span>    <span class="err">$</span><span class="mh">0xe</span><span class="p">,</span> <span class="o">%</span><span class="nx">ah</span>
+    <span class="nx">int</span> <span class="err">$</span><span class="mh">0x10</span>
+</pre></div>
+
+
+<p>After we saw the <code>notification_string</code> in our screen, the <code>boot.S</code> starts to load first sector of the <code>core.img</code> file which is represented by the <code>diskboot.img</code> image. To read first sector of the <code>core.img</code> we will use the <code>0x42</code> function of the <a href="http://www.ctyme.com/intr/rb-0708.htm">0x13</a> interrupt. First of all we need to check support of the <a href="https://en.wikipedia.org/wiki/Logical_block_addressing">LBA</a> in the BIOS by the call of the <a href="http://www.ctyme.com/intr/rb-0706.htm">0x41</a> fuction of the <code>0x13</code> interrupt:</p>
+<div class="highlight"><pre>    movb    $0x41, %ah
+    movw    $0x55aa, %bx
+    int $0x13
+</pre></div>
+
+
+<p>If the extended read or <code>LBA</code> is supported we start to read first 512 bytes from the <code>core.img</code>. To use extended read we must call the <a href="http://www.ctyme.com/intr/rb-0708.htm">0x42</a> function of the <code>0x13</code> interrupt with the following set of arguments:</p>
+<ul>
+<li><code>%ah</code> register must contain number of the function, <code>0x42</code> in our case;</li>
+<li><code>%dl</code> register must contain number of the hard drive (starts from <code>0x80</code>);</li>
+<li><code>%ds:%si</code> registers must point to the <a href="http://www-pc.uni-regensburg.de/hardware/TECHDOK/ATA_EDD_11.PDF">disk address packet structure</a>.</li>
+</ul>
+<p>The disk address packet structure is a data structure which contains data that helps to convert logical block addressing information to physical parameters (<a href="https://en.wikipedia.org/wiki/Cylinder-head-sector">Cylinders, Heads, Sectors</a>) of a disk. Before the call of the <code>0x13</code> interrupt, we need to fill disk address packet structure. In the our code it starts at the <code>disk_address_packet</code> label. General structure of the disk address packet structure is:</p>
+<div class="highlight"><pre>Offset
+      +---------------------------------+
+  0   |  Packet size in bytes           |
+  1   |  Reserved (must be 0)           |
+  2   |  Number of blocks to transfer   |
+  3   |  Reserved (must be 0)           |
+  4   |  Address of transfer buffer     |
+  8   |  Started absolute block number  |
+      +---------------------------------+
+</pre></div>
+
+
+<p>Address of the disk address packet structure is located in the <code>%si</code> register:</p>
+<div class="highlight"><pre><span class="x">    movw    </span><span class="p">$</span><span class="nv">disk_address_packet</span><span class="x">, %si</span>
+</pre></div>
+
+
+<p>So, we can set reserved bytes to zero and packet size in our <code>disk_packet_packet</code> with the:</p>
+<div class="highlight"><pre>movw    $0x0010, (%si)
+</pre></div>
+
+
+<p>packets size will be <code>16</code> bytes here. We will read one 512 bytes block:</p>
+<div class="highlight"><pre>    xorw    %ax, %ax
+    ...
+    incw    %ax
+    movw    %ax, 2(%si)
+</pre></div>
+
+
+<p>In the end we need to set block number:</p>
+<div class="highlight"><pre><span class="x">    </span><span class="nx">movl</span>    <span class="kd">LOCAL</span><span class="p">(</span><span class="nx">kernel_sector</span><span class="p">),</span> <span class="o">%</span><span class="nx">ebx</span>
+    <span class="nx">movl</span>    <span class="o">%</span><span class="nx">ebx</span><span class="p">,</span> <span class="mi">8</span><span class="p">(</span><span class="o">%</span><span class="nx">si</span><span class="p">)</span>
+    <span class="nx">movl</span>    <span class="kd">LOCAL</span><span class="p">(</span><span class="nx">kernel_sector_high</span><span class="p">),</span> <span class="o">%</span><span class="nx">ebx</span>
+    <span class="nx">movl</span>    <span class="o">%</span><span class="nx">ebx</span><span class="p">,</span> <span class="mi">12</span><span class="p">(</span><span class="o">%</span><span class="nx">si</span><span class="p">)</span>
+</pre></div>
+
+
+<p>and pointer to the buffer where we will read data from disk:</p>
+<div class="highlight"><pre><span class="x">    movw    </span><span class="p">$</span><span class="nv">GRUB_BOOT_MACHINE_BUFFER_SEG</span><span class="x">, 6(%si)</span>
+</pre></div>
+
+
+<p>and call the <code>0x13</code> interrupt:</p>
+<div class="highlight"><pre>    movb    $0x42, %ah
+    int     $0x13
+</pre></div>
+
+
+<p>If all is good, the <code>GRUB_BOOT_MACHINE_BUFFER_SEG</code> will point to the beginning of the <code>diskboot.img</code> image in memory. In the of the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/boot/i386/pc/boot.S">grub-core/boot/i386/pc/boot.S</a> we relocate our buffer to the <code>GRUB_BOOT_MACHINE_KERNEL_ADDR</code> or address and jump into it:</p>
+<div class="highlight"><pre><span class="x">    </span><span class="nx">jmp</span> <span class="o">*</span><span class="p">(</span><span class="kd">LOCAL</span><span class="p">(</span><span class="nx">kernel_address</span><span class="p">))</span>
+</pre></div>
+
+
+<p>From this moment we have <code>diskboot.img</code> (which is first 512 bytes of the <code>core.img</code>) in the memory. As you may remember, the main point of the <code>diskboot.img</code> is to load rest of the <code>core.img</code> and jump into it. I will not describe this process here, it is pretty easy to understand if you understood previous description of how the <code>boot.S</code> loads <code>diskboot.img</code>. Both of these processes are prety similar. After the <code>diskboot.img</code> will load rest of the <code>core.img</code> it jumps to the GNU GRUB kernel code at <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/boot/i386/pc/startup_raw.S">grub-core/boot/i386/pc/startup_raw.S</a> source code file. The main point of this code is to make preparation before the <a href="https://en.wikipedia.org/wiki/C_%28programming_language%29">C</a> code. You can remember that we need to prepare <a href="https://en.wikipedia.org/wiki/.bss">BSS</a> section for global uninitialized data to run <code>C</code> code and stack. Besides this we execute transition to <a href="https://en.wikipedia.org/wiki/Protected_mode">protected mode</a>. Let's look on this.</p>
+<p>Before the transition to the protected mode, we set segment registers to the known value (zero in our case) and setup stack. After this we call the <code>real_to_prot</code> funtion which is implemented in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/kern/i386/realmode.S">grub-core/kern/i386/realmode.S</a> assembly file. It starts from the loading of <a href="http://wiki.osdev.org/Global_Descriptor_Table">Global Descriptor Table</a> with the <code>lgdt</code> instruction:</p>
+<div class="highlight"><pre>lgdtl   gdtdesc
+</pre></div>
+
+
+<p>Where the <code>gdtdesc</code> contains description of four segments:</p>
+<ul>
+<li>Code segment;</li>
+<li>Data segment;</li>
+<li>Real-mode code segment;</li>
+<li>Real-mode data segment.</li>
+</ul>
+<p>I will not describe what is it <code>GDT</code> and why do we need in it in this post. More about it you can read more about it in the second <a href="https://0xax.gitbooks.io/linux-insides/content/Booting/linux-bootstrap-2.html">part</a> of the linux-insides book. After we set the <code>Global Descriptor Table</code>, we turn on protected mode by the setting <code>PE</code> bit in the <code>%cr0</code> <a href="https://en.wikipedia.org/wiki/Control_register">control register</a>:</p>
+<div class="highlight"><pre><span class="x">    movl    %cr0, %eax</span>
+<span class="x">    orl </span><span class="p">$</span><span class="nv">GRUB_MEMORY_CPU_CR0_PE_ON</span><span class="x">, %eax</span>
+<span class="x">    movl    %eax, %cr0</span>
+</pre></div>
+
+
+<p>and jump to the protected mode. Next we clear segment registers, setup protected mode stack and load <a href="https://en.wikipedia.org/wiki/Interrupt_descriptor_table">interrupt descriptor table</a> by the call of the <code>lidtl</code> instruction:</p>
+<div class="highlight"><pre>lidt protidt
+</pre></div>
+
+
+<p>Interrupt descriptor table contains addresses of the interrupt handlers which are will be called when an interrupt occurs. After all of this manipulations we are in protected mode and may return to the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/boot/i386/pc/startup_raw.S">grub-core/boot/i386/pc/startup_raw.S</a> assembly file. In the end, we fill <code>%edx</code>, <code>%edi</code>, <code>%ecx</code> and <code>%eax</code> registers with the number of boot device, addresses of the <code>prot_to_real</code> and <code>real_to_prot</code> function whih are helpers for transition between real/protected modes and address of the interrupt descriptor table. Now we can jump to the GNU GRUB kernel:</p>
+<div class="highlight"><pre><span class="nx">movl</span>    <span class="kd">LOCAL</span><span class="p">(</span><span class="nx">boot_dev</span><span class="p">),</span> <span class="o">%</span><span class="nx">edx</span>
+<span class="nx">movl</span>    <span class="nv">$prot_to_real</span><span class="p">,</span> <span class="o">%</span><span class="nx">edi</span>
+<span class="nx">movl</span>    <span class="nv">$real_to_prot</span><span class="p">,</span> <span class="o">%</span><span class="nx">ecx</span>
+<span class="nx">movl</span>    <span class="nv">$LOCAL</span><span class="p">(</span><span class="nx">realidt</span><span class="p">),</span> <span class="o">%</span><span class="nx">eax</span>
+<span class="nx">jmp</span> <span class="o">*%</span><span class="nx">esi</span>
+</pre></div>
+
+
+<p>The GNU GRUB kernel for <a href="https://en.wikipedia.org/wiki/X86">x86</a> entry is in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/kern/i386/pc/startup.S">grub-core/kern/i386/pc/startup.S</a> assembly file. We are clearing space for the <a href="https://en.wikipedia.org/wiki/.bss">BSS</a> section and call the first function which is written in <code>C</code> programming language:</p>
+<div class="highlight"><pre>call EXT_C(grub_main)
+</pre></div>
+
+
+<p>For this moment, we've been through the low-level part of the GNU GRUB. Of course, it is not the end of the assembly. But for now we have loaded kernel of the GNU GRUB into memory and transfered control to it which is writen mostly in C programming language. Well, let's continue.</p>
+<h2>GNU GRUB kernel</h2>
+<p>The <code>grub_main</code> function defined in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/kern/main.c">grub-core/kern/main.c</a> source code file and its main purpose is to initialize architecture-specific stuff, to load/parse configuration file and modules, to set some invironment variables and to load <code>normal</code> mode. It starts from the call of the <code>grub_machine_init()</code> function which is defined in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/kern/i386/pc/init.c">grub-core/kern/i386/pc/init.c</a> source code file. The <code>grub_machine_init</code> function initializes console by the call of the:</p>
+<div class="highlight"><pre><span class="n">grub_console_init</span> <span class="p">();</span>
+</pre></div>
+
+
+<p>which just call of:</p>
+<div class="highlight"><pre><span class="n">grub_term_register_output</span> <span class="p">(</span><span class="s">&quot;console&quot;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">grub_console_term_output</span><span class="p">);</span>
+<span class="n">grub_term_register_input</span> <span class="p">(</span><span class="s">&quot;console&quot;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">grub_console_term_input</span><span class="p">);</span>
+</pre></div>
+
+
+<p>functions. These functions takes two parameters: the first is name of a console and the second is pointer to a structure which contains pointer to the actions on a given console, like <code>putchar</code>, <code>cls</code> and etc. In the next time, when print-like function will be called, the GNU GRUB will go through a list of registered consoles and will call their print API. After this the <code>grub_machine_init()</code> function initializes memory regions and intializes <a href="https://en.wikipedia.org/wiki/Time_Stamp_Counter">Time stamp counter</a>.</p>
+<p>After this we return to the <code>grub_main ()</code> function which calls the <code>grub_load_config()</code> function. As you can understand from the functio's name, it loads configuration file. The next step is loading of GNU GRUB modules which are represented by the <a href="grub_load_config ();">ELF</a> files in the <code>/boot/grub/arch</code>. For example:</p>
+<p><img alt="grub-mod" src="http://s3.postimg.org/bvfh7uatf/elf.png" /></p>
+<p>After the GNU GRUB kernel will load modules, it sets <code>root</code> and <code>prefix</code> environment variables which are represent root device and prefix of GNU GRUB directory (by default it is <code>/boot/grub</code>), parses configuration file, regisers four core command: <code>ls</code>, <code>set</code>, <code>unset</code> and <code>insmod</code>. The last step of execution of the <code>grub_main ()</code> function is the <code>grub_load_normal_mode ()</code> function. This function defined in the same source code file as the <code>grub_main()</code> function and it tries to load and execute the <code>normal</code> module.</p>
+<p>This module represents main module of GNU GRUB which starts to work after all of main low-level preparation. As we can read in the <a href="http://www.gnu.org/software/grub/manual/grub.html#normal">documentation</a>:</p>
+<blockquote>
+<p>In normal mode, commands, filesystem modules, and cryptography modules are automatically loaded, and the full GRUB script parser is available</p>
+</blockquote>
+<p>So, the <code>normal</code> module/command is responsible for the user menu, loading of modules which are defined in the GNU GRUB configuration file with <code>insmod</code> command, handling of user input and transfering control to the real loader of an operating system kernel. Let's take a closer look on the <code>normal</code> mode.</p>
+<h2>Normal mode</h2>
+<p>All code which is related to the <code>normal</code> mode is located in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/normal">grub-core/normal</a> directory. As well as all the modules of GNU GRUB, the <code>normal.mod</code> has definition of the <code>GRUB_MOD_INIT</code> an <code>GRUB_MOD_FINI</code> macros which are responsible for a module initialization and finalization. The <code>normal.mod</code> sets a couple of environment variables like target processor, colors, pager and etc. Also it register a set of command to clear screen, exit from normal mode and etc. In the end of the <code>grub_main()</code> function we could see the call of the:</p>
+<div class="highlight"><pre><span class="n">grub_command_execute</span> <span class="p">(</span><span class="s">&quot;normal&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</pre></div>
+
+
+<p>function which executes already registed command in the <code>GRUB_MOD_INIT("normal")</code>. It looks:</p>
+<div class="highlight"><pre><span class="n">grub_register_command</span> <span class="p">(</span><span class="s">&quot;normal&quot;</span><span class="p">,</span> <span class="n">grub_cmd_normal</span><span class="p">,</span>
+                       <span class="mi">0</span><span class="p">,</span> <span class="n">N_</span><span class="p">(</span><span class="s">&quot;Enter normal mode.&quot;</span><span class="p">));</span>
+</pre></div>
+
+
+<p>So, after the last step of the <code>grub_main()</code> function, we will be in the <code>grub_cmd_normal()</code> functio. This function enters to the <code>normal</code> mode. Practically it means that it read configuration file of the GNU GRUB (<code>/boot/grub/grub.cfg</code>) to the <code>grub_menu_t</code> type which represents menu of the GNU GRUB and renders menu. We will skip many parts of this, like how menu renders and how it is represented in the source code of the GNU GRUB, because its not related directly with bootloading. The interesting part for us is that <code>grub_normal_execute()</code> function calls the <code>grub_show_menu()</code> function from the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/normal/menu.c">grub-core/normal/menu.c</a> source code file which in turn calls the <code>run_menu</code> function.</p>
+<p>The <code>run_menu</code> function provides interruptible sleep until a menu item is selected and returns the selected menu item:</p>
+<div class="highlight"><pre><span class="n">boot_entry</span> <span class="o">=</span> <span class="n">run_menu</span> <span class="p">(</span><span class="n">menu</span><span class="p">,</span> <span class="n">nested</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">auto_boot</span><span class="p">);</span>
+</pre></div>
+
+
+<p>After the <code>run_menu()</code> function will return index of selected menu item which is represented by the <code>grub_menu_entry</code> structure, we need to execute this menu entry by the call of the <code>grub_menu_execute_entry</code> function. This function takes two parameters:</p>
+<ul>
+<li>Selected menu entry;</li>
+<li><code>auto_boot</code> - shows that nothing was selected and timer is expired.</li>
+</ul>
+<p>The <code>grub_menu_execute_entry()</code> function is big enough. It checks that an user selected submenu and renders it in this case, it checks that selected menu entry needs in authentication if we put something like <code>--users user1</code> to a menu entry and etc. But the greatest interest for us is the following code:</p>
+<div class="highlight"><pre><span class="n">grub_script_execute_new_scope</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">sourcecode</span><span class="p">,</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">argc</span><span class="p">,</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">args</span><span class="p">);</span>
+<span class="p">...</span>
+<span class="p">...</span>
+<span class="p">...</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">grub_errno</span> <span class="o">==</span> <span class="n">GRUB_ERR_NONE</span> <span class="o">&amp;&amp;</span> <span class="n">grub_loader_is_loaded</span> <span class="p">())</span>
+    <span class="n">grub_command_execute</span> <span class="p">(</span><span class="s">&quot;boot&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</pre></div>
+
+
+<p>The first function takes the body of the selected menu entry, count of arguments and arguments of the GNU GRUB function and tries to execute it. For example if a body of your menu entry will be like this:</p>
+<div class="highlight"><pre>linux   /vmlinuz-linux root=UUID=4680b48e-595e-4d03-9115-2db79206e9f9 rw  quiet
+echo    &#39;Loading initial ramdisk ...&#39;
+initrd   /initramfs-linux.img
+</pre></div>
+
+
+<p>The <code>grub_cmd_linux()</code>, <code>grub_cmd_initrd()</code> and the <code>grub_cmd_echo()</code> functions will be called. After the GNU GRUB will handle script we check an error and that loader is loaded. If both conditions will be good, we execute <code>boot</code> commands which will start to boot a kernel. Now we are stopped on the last step - loading of the Linux kernel.</p>
+<h2>Ok, finally lets load it</h2>
+<p>A loader will be loaded during <code>linux</code> command execution in the <code>grub_cmd_linux()</code> function. This function is defined in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/loader/i386/linux.c">grub-core/loader/i386/linux.c</a> source code file. If you will look on the definition of the <code>linux</code> command in your <code>/boot/grub/grub.cfg</code> configuration file, you will see that this command takes path of the Linux kernel image as first argument. So, the <code>grub_cmd_linux()</code> function starts from the check of the number of command line arguments:</p>
+<div class="highlight"><pre><span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">grub_error</span> <span class="p">(</span><span class="n">GRUB_ERR_BAD_ARGUMENT</span><span class="p">,</span> <span class="n">N_</span><span class="p">(</span><span class="s">&quot;filename expected&quot;</span><span class="p">));</span>
+    <span class="k">goto</span> <span class="n">fail</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>If we have no command line arguments, print error and go to <code>fail</code> label. After this we try to open and read the header of the Linux kernel image by the given path in the first command line argument. We are reading the Linux kernel image to the <code>struct linux_kernel_header lh</code> structure which defined in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/include/grub/i386/linux.h">include/grub/i386/linux.h</a> header file and contains fields which are mapped to the <a href="https://www.kernel.org/doc/Documentation/x86/boot.txt">Linux boot protocol v 2.10</a>. After we have read the header of the Linux kernel image, we make some checks for magic number (<code>0xaa55</code>), that <code>setup_sects</code> field is not greater than <code>64</code> and etc. As we finished with checks, we need to calculate size of the Linux kernel image and read it full. After this we need to fill/calculate fields which are marked in the Linux boot protocol as <code>write</code>. There fields are:</p>
+<ul>
+<li><code>code32_start</code> - entry point of the Linux kernel in <a href="https://en.wikipedia.org/wiki/Protected_mode">protected mode</a>. It is not neccecary, but can be updated for realocation;</li>
+<li><code>ramdisk_image</code> - the 32-bit linear address of the initial ramdisk or ramfs;</li>
+<li><code>ramdisk_image_size</code> - the size of the initial ramdisk or ramfs;</li>
+<li><code>heap_end_ptr</code> - the offset of the end of the setup stack/heap, minus <code>0x0200</code>;</li>
+<li><code>loadflags</code> - bitmask which provides boot related flags.</li>
+<li>and etc.</li>
+</ul>
+<p>So, we are setting the type of the bootloader which is the GNU GRUB (<code>0x72</code>) in our case, offset for the Linux kernel command line, <code>ramdisk_image</code> and <code>ramdisk_size</code> to zero (these fields will be filled in the <code>grub_cmd_initrd()</code>) and other fields:</p>
+<div class="highlight"><pre><span class="n">linux_params</span><span class="p">.</span><span class="n">type_of_loader</span> <span class="o">=</span> <span class="n">GRUB_LINUX_BOOT_LOADER_TYPE</span><span class="p">;</span>
+<span class="n">linux_params</span><span class="p">.</span><span class="n">cl_magic</span> <span class="o">=</span> <span class="n">GRUB_LINUX_CL_MAGIC</span><span class="p">;</span>
+<span class="n">linux_params</span><span class="p">.</span><span class="n">cl_offset</span> <span class="o">=</span> <span class="mh">0x1000</span><span class="p">;</span>
+<span class="n">linux_params</span><span class="p">.</span><span class="n">ramdisk_image</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="n">linux_params</span><span class="p">.</span><span class="n">ramdisk_size</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="n">linux_params</span><span class="p">.</span><span class="n">heap_end_ptr</span> <span class="o">=</span> <span class="n">GRUB_LINUX_HEAP_END_OFFSET</span><span class="p">;</span>
+<span class="n">linux_params</span><span class="p">.</span><span class="n">loadflags</span> <span class="o">|=</span> <span class="n">GRUB_LINUX_FLAG_CAN_USE_HEAP</span><span class="p">;</span>
+<span class="p">...</span>
+<span class="p">...</span>
+<span class="p">...</span>
+</pre></div>
+
+
+<p>After we have load the Linux kernel image into memory and have filled Linux kernel header with constructed command line, we check errors and set callback function for the Linux kernel booting. In our case this function will be <code>grub_linux_boot()</code> function:</p>
+<div class="highlight"><pre><span class="k">if</span> <span class="p">(</span><span class="n">grub_errno</span> <span class="o">==</span> <span class="n">GRUB_ERR_NONE</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">grub_loader_set</span> <span class="p">(</span><span class="n">grub_linux_boot</span><span class="p">,</span> <span class="n">grub_linux_unload</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="n">loaded</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>where the <code>grub_loader_set()</code> function sets:</p>
+<div class="highlight"><pre><span class="n">grub_loader_set</span> <span class="p">(</span><span class="kt">grub_err_t</span> <span class="p">(</span><span class="o">*</span><span class="n">boot</span><span class="p">)</span> <span class="p">(</span><span class="kt">void</span><span class="p">),</span>
+                 <span class="kt">grub_err_t</span> <span class="p">(</span><span class="o">*</span><span class="n">unload</span><span class="p">)</span> <span class="p">(</span><span class="kt">void</span><span class="p">),</span>
+                 <span class="kt">int</span> <span class="n">flags</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="p">...</span>
+    <span class="n">grub_loader_boot_func</span> <span class="o">=</span> <span class="n">boot</span><span class="p">;</span>
+    <span class="p">...</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Now let's return to the <code>grub_menu_execute_entry()</code> function. We have stopped at the following code there:</p>
+<div class="highlight"><pre><span class="n">grub_script_execute_new_scope</span> <span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">sourcecode</span><span class="p">,</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">argc</span><span class="p">,</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">args</span><span class="p">);</span>
+
+<span class="k">if</span> <span class="p">(</span><span class="n">grub_errno</span> <span class="o">==</span> <span class="n">GRUB_ERR_NONE</span> <span class="o">&amp;&amp;</span> <span class="n">grub_loader_is_loaded</span> <span class="p">())</span>
+    <span class="n">grub_command_execute</span> <span class="p">(</span><span class="s">&quot;boot&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</pre></div>
+
+
+<p>The first line of code is executed and as we just saw, this function reads the body of a selected menu entry and executes commands from it. After the <code>grub_script_execute_new_scope</code> will be finished, at least <code>linux</code> and <code>initrd</code> commands of GNU GRUB will be executed. This means that the header of the Linux kernel and <a href="https://en.wikipedia.org/wiki/Initrd">initrd</a> will be loaded into the memory and fields of the Linux kernel header are parsed and needed fields of it will be calculated and filled. If everything is ok, the <code>if</code> condition after the call of the <code>grub_script_execute_new_scope()</code> function will return true and the <code>boot</code> command will be execute.</p>
+<p>The entry of the <code>boot</code> command is the <code>grub_cmd_boot()</code> function which defined in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/commands/boot.c">grub-core/commands/boot.c</a> source code file. Besides a couple of check, the point of the <code>grub_cmd_boot()</code> function is to call <code>boot</code> callback function which is set by the loader:</p>
+<div class="highlight"><pre><span class="n">err</span> <span class="o">=</span> <span class="p">(</span><span class="n">grub_loader_boot_func</span><span class="p">)</span> <span class="p">();</span>
+</pre></div>
+
+
+<p>In our case, this callback function was set in the <code>grub_loader_set()</code> function and this function is <code>grub_linux_boot()</code> function which defined in the <a href="http://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/loader/i386/linux.c">grub-core/loader/i386/linux.c</a> source code file. The <code>grub_linux_boot()</code> function sets video mode which is depends on values of <code>video</code> parameters from the Linux kernel header, sets the Linux kernel command line offset, fills register and start</p>
+<div class="highlight"><pre><span class="n">state</span><span class="p">.</span><span class="n">ebp</span> <span class="o">=</span> <span class="n">state</span><span class="p">.</span><span class="n">edi</span> <span class="o">=</span> <span class="n">state</span><span class="p">.</span><span class="n">ebx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="n">state</span><span class="p">.</span><span class="n">esi</span> <span class="o">=</span> <span class="n">ctx</span><span class="p">.</span><span class="n">real_mode_target</span><span class="p">;</span>
+<span class="n">state</span><span class="p">.</span><span class="n">esp</span> <span class="o">=</span> <span class="n">ctx</span><span class="p">.</span><span class="n">real_mode_target</span><span class="p">;</span>
+<span class="n">state</span><span class="p">.</span><span class="n">eip</span> <span class="o">=</span> <span class="n">ctx</span><span class="p">.</span><span class="n">params</span><span class="o">-&gt;</span><span class="n">code32_start</span><span class="p">;</span>
+<span class="k">return</span> <span class="nf">grub_relocator32_boot</span> <span class="p">(</span><span class="n">relocator</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</pre></div>
+
+
+<p>The relocator of the GNU GRUB is big piece of code which prepares all registers to the state which is good for the Linux kernel, prepares environment to the actual processor mode which depends on relocator type (may be in real, protected or long mode), calculates base physical address of the Linux kernel and jumps on it.</p>
+<p>From this moment we are in the kernel!</p>
+<p>That's all.</p>
+<h2>Conclusion</h2>
+<p>We saw how the GNU GRUB loads the Linux kernel in this post. Of course, it is not fully cover booting process of the Linux kernel and it also does not cover full aspects of the GNU GRUB. We have missed some things like how does GRUB manage filesystem related work, memory management related stuff, styles and appereance of menu and etc. This is not real to cover all of this topics and especially full source code of the such project like the GNU GRUB in one post. But I hope, you'll like it and you will research other boot related things with yourself.</p>
+<p><strong>Questions/Suggestions</strong>: Feel free about any questions or suggestions by pinging me at twitter <a href="https://twitter.com/0xAX">@0xAX</a>, adding an issue or just drop me an <a href="kuleshovmail@gmail.com">email</a>.</p>
+<p><strong>Please note that English is not my first language and I am really sorry for any inconvenience. If you found any mistakes please send me PR to <a href="https://github.com/0xAX/0xAX.github.io/tree/source">0xax.github.com</a> or just drop me an <a href="kuleshovmail@gmail.com">email</a></strong></p>
+<h2>Links</h2>
+<ul>
+<li><a href="https://www.gnu.org/software/grub/">GNU GRUB</a></li>
+<li><a href="http://git.savannah.gnu.org/cgit/grub.git/tree/">GNU GRUB git web interface</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Assembly_language">assembly programming language</a></li>
+<li><a href="https://0xax.gitbooks.io/linux-insides/content/index.html">linux-insides</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Initrd">initrd</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Executable_and_Linkable_Format">ELF</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Advanced_Configuration_and_Power_Interface">Advanced Configuration and Power Interface</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Master_boot_record">Master boot record</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Partition_table">partition table</a></li>
+<li><a href="https://en.wikipedia.org/wiki/BIOS_parameter_block">BIOS parameter block</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Logical_block_addressing">LBA</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Cylinder-head-sector">Cylinders, Heads, Sectors</a></li>
+<li><a href="https://en.wikipedia.org/wiki/.bss">BSS</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Protected_mode">protected mode</a></li>
+<li><a href="http://wiki.osdev.org/Global_Descriptor_Table">Global Descriptor Table</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Interrupt_descriptor_table">interrupt descriptor table</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Time_Stamp_Counter">Time stamp counter</a></li>
+<li><a href="https://www.kernel.org/doc/Documentation/x86/boot.txt">Linux kernel boot protocol</a></li>
+</ul>
+            </div>
+            <!-- /.entry-content -->
+            <div class="panel" style="font-family: 'Droid Sans';">
+              <div class="panel-body" style="">
+<hr style="margin-left: -15px;"/>
+    <!-- AddThis Button BEGIN -->
+    <div class="addthis_toolbox addthis_default_style" style="margin-left: -15px;">
+      <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
+      <a class="addthis_button_tweet"></a>
+      <a class="addthis_button_google_plusone" g:plusone:size="medium"></a>
+      <div style="float: right;"><footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+      <i style="top: -1px; position: relative; margin-top: -1px;" class="fa fa-calendar"></i>
+      <time datetime="2016-01-05T00:00:00+06:00"> Tue 05 January 2016</time>
+    </span>
+
+
+
+
+    
+</footer><!-- /.post-info --></div>
+    </div>
+    <!-- AddThis Button END -->
+              </div>
+            </div>
+        </article>
+    </section>
+
+        </div>
+    </div>
+</div>
+<footer>
+   <div class="container">
+      <div class="row">
+         <div class="col-xs-12" style="float: left;">              <p style="float: right;"><small>  <a style="color: #a0522d; float: right;" href="https://github.com/0xAX">@0xAX &copy; 2016</a>
+</small></p>
+         </div>
+      </div>
+   </div>
+</footer>
+<script src="./theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="./theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="./theme/js/respond.min.js"></script>
+
+    <!-- Google Analytics -->
+    <script type="text/javascript">
+
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-64079379-1']);
+        _gaq.push(['_trackPageview']);
+
+        (function () {
+            var ga = document.createElement('script');
+            ga.type = 'text/javascript';
+            ga.async = true;
+            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(ga, s);
+        })();
+    </script>
+    <!-- End Google Analytics Code -->
+
+        <script type="text/javascript">var addthis_config = {"data_track_addressbar": true};</script>
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-53a535f822555b0c"></script>
+</body>
+</html>
