@@ -1,4 +1,4 @@
-Title: How GNU GRUB works
+Title: How does GNU GRUB work
 Date: 2016-01-05
 Tags: linux, bootloader
 Authors: Alexander Kuleshov
