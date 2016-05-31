@@ -15,13 +15,13 @@
 
         <meta name="author" content="Alexander Kuleshov" />
         <meta name="keywords" content="linux,x86_64,assembler" />
-        <meta name="description" content="Introduction There are many developers between us. We write a tons of code every day. Sometime, it is even not a bad code :) Every of us can easily write the simplest code like this: #include &lt;stdio.h&gt; int main() { int x = 10; int y = 100; printf(&#34;x + y = %d&#34;, x ..." />
+        <meta name="description" content="Introduction There are many developers among us. We write tons of code every day and ... sometimes, the code is not even bad :) And we can all easily write simple code like this: #include &lt;stdio.h&gt; int main() { int x = 10; int y = 100; printf(&#34;x + y = %d&#34;, x ..." />
 
         <meta property="og:site_name" content="Just a Memo" />
         <meta property="og:type" content="article"/>
         <meta property="og:title" content="Say hello to x86_64 Assembly [part 1]"/>
         <meta property="og:url" content="./say-hello-to-x86_64-assembly-part-1.html"/>
-        <meta property="og:description" content="Introduction There are many developers between us. We write a tons of code every day. Sometime, it is even not a bad code :) Every of us can easily write the simplest code like this: #include &lt;stdio.h&gt; int main() { int x = 10; int y = 100; printf(&#34;x + y = %d&#34;, x ..."/>
+        <meta property="og:description" content="Introduction There are many developers among us. We write tons of code every day and ... sometimes, the code is not even bad :) And we can all easily write simple code like this: #include &lt;stdio.h&gt; int main() { int x = 10; int y = 100; printf(&#34;x + y = %d&#34;, x ..."/>
         <meta property="article:published_time" content="2014-08-01" />
             <meta property="article:tag" content="linux" />
             <meta property="article:tag" content="x86_64" />
@@ -119,7 +119,7 @@ Just a Memo            </a>
             </header>
             <div class="entry-content" style="font-family: 'Droid Sans'; font-size: 17px;">
                 <h2>Introduction</h2>
-<p>There are many developers between us. We write a tons of code every day. Sometime, it is even not a bad code :) Every of us can easily write the simplest code like this:</p>
+<p>There are many developers among us. We write tons of code every day and ... sometimes, the code is not even bad :) And we can all easily write simple code like this:</p>
 <div class="highlight"><pre><span class="cp">#include &lt;stdio.h&gt;</span>
 
 <span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
@@ -131,51 +131,52 @@ Just a Memo            </a>
 </pre></div>
 
 
-<p>Every of us can understand what's this C code does. But... How this code works at low level? I think that not all of us can answer on this question, and me too. I thought that i can write code on high level programming languages like Haskell, Erlang, Go and etc..., but i absolutely don't know how it works at low level, after compilation. So I decided to take a few deep steps down, to assembly, and to describe my learning way about this. Hope it will be interesting, not only for me. Something about 5 - 6 years ago I already used assembly for writing simple programs, it was in university and i used Turbo assembly and DOS operating system. Now I use Linux-x86-64 operating system. Yes, must be big difference between Linux 64 bit and DOS 16 bit. So let's start.</p>
+<p>We all understand what this C code does. But... how does this code work at a lower level? I think that not all of us can answer this question, neither do I. I actually think to be able to write code in high level programming languages like Haskell, Erlang, Go and so on, but I absolutely don't know how it works at a lower level, after compilation. So I decided to take a few deep steps down to assembly and to later describe what I learned down there to you in hope, that it will be interesting (and not only for me). About 5 or 6 years ago I already used assembly for writing simple programs; it was in university and I used Turbo assembly and the DOS operating system. Now I use a Linux-x86-64 operating system and, yes, there is quite a gap between Linux 64 bit and DOS 16 bit, but let's not bother about this and start going.</p>
 <h2>Preparation</h2>
-<p>Before we started, we must to prepare some things like As I wrote about, I use Ubuntu (Ubuntu 14.04.1 LTS 64 bit), thus my posts will be for this operating system and architecture. Different CPU supports different set of instructions. I use Intel Core i7 870 processor, and all code will be written processor. Also i will use nasm assembly. You can install it with:</p>
+<p>Just before we get to the programming, we should set up some things. I use Ubuntu (Ubuntu 14.04.1 LTS 64 bit), thus my posts will be for this operating system. Also different CPUs support different instruction sets. I use Intels Core i7 870 processor, hence all code will be for this processor. Also I will use nasm assembly, which you can install by typing:</p>
 <div class="highlight"><pre><span class="nv">$ </span>sudo apt-get install nasm
 </pre></div>
 
 
-<p>It's version must be 2.0.0 or greater. I use NASM version 2.10.09 compiled on Dec 29 2013 version. And the last part, you will need in text editor where you will write you assembly code. I use Emacs with nasm-mode.el for this. It is not mandatory, of course you can use your favourite text editor. If you use Emacs as me you can download nasm-mode.el and configure your Emacs like this:</p>
+<p>Its version must be 2.0.0 or greater (I use NASM version 2.10.09 compiled on Dec 29 2013). Finally you will need a text editor where you can write you assembly code. I use Emacs with nasm-mode.el for this. Of course this is not mandatory, you can use any text editor you like, but if you use Emacs like I do you can download nasm-mode.el and configure your Emacs like this:</p>
 <div class="highlight"><pre><span class="p">(</span><span class="nb">load</span> <span class="s">&quot;~/.emacs.d/lisp/nasm.el&quot;</span><span class="p">)</span>
 <span class="p">(</span><span class="nb">require</span> <span class="ss">&#39;nasm-mode</span><span class="p">)</span>
 <span class="p">(</span><span class="nv">add-to-list</span> <span class="ss">&#39;auto-mode-alist</span> <span class="o">&#39;</span><span class="p">(</span><span class="s">&quot;\\.\\(asm\\|s\\)$&quot;</span> <span class="o">.</span> <span class="nv">nasm-mode</span><span class="p">))</span>
 </pre></div>
 
 
-<p>That's all we need for this moment. Other tools will be describe in next posts.</p>
+<p>That's all we need for this moment. The other tools will be described when needed in the following posts.</p>
 <h2>Syntax of nasm assembly</h2>
-<p>Here I will not describe full assembly syntax, we'll mention only those parts of the syntax, which we will use in this post. Usually NASM program divided into sections. In this post we'll meet 2 following sections:</p>
+<p>Here I will not describe the full assembly syntax. We'll mention only those parts of the syntax, which are being used in this post.</p>
+<p>Usually a NASM program is divided into several sections, but in this post we'll only use the following two sections:</p>
 <ul>
 <li>data section</li>
 <li>text section</li>
 </ul>
-<p>The data section is used for declaring constants. This data does not change at runtime. You can declare various math or other constants and etc... The syntax for declaring data section is:</p>
+<p>The data section is used for declaring constants. This data does not change at runtime. You can declare various math or other constants here. The syntax for opening the data section is:</p>
 <div class="highlight"><pre>    section .data
 </pre></div>
 
 
-<p>The text section is for code. This section must begin with the declaration global _start, which tells the kernel where the program execution begins.</p>
+<p>The text section is for our code. After opening the text section we must also add a declaration to tell the kernel where the program execution begins:</p>
 <div class="highlight"><pre>    section .text
     global _start
     _start:
 </pre></div>
 
 
-<p>Comments starts with the <code>;</code> symbol. Every NASM source code line contains some combination of the following four fields:</p>
+<p>Comments start with the <code>;</code> symbol. Every NASM source code line contains some combination of the following four fields:</p>
 <div class="highlight"><pre><span class="cp">[</span><span class="nx">label</span><span class="p">:</span><span class="cp">]</span> <span class="nt">instruction</span> <span class="cp">[</span><span class="nx">operands</span><span class="cp">]</span> <span class="cp">[</span><span class="p">;</span> <span class="nx">comment</span><span class="cp">]</span>
 </pre></div>
 
 
-<p>Fields which are in square brackets are optional. A basic NASM instruction consists from two parts. The first one is the name of the instruction which is to be executed, and the second are the operands of this command. For example:</p>
+<p>Fields which are in square brackets are optional. A basic NASM instruction consists of two parts. The first one is the name of the instruction which is to be executed; the second are the operands of this command, for example:</p>
 <div class="highlight"><pre>    MOV COUNT, 48 ; Put value 48 in the COUNT variable
 </pre></div>
 
 
 <h2>Hello world</h2>
-<p>Let's write first program with NASM assembly. And of course it will be traditional Hello world program. Here is the code of it:</p>
+<p>Let's write our first program in NASM assembly. And of course it will be the traditional Hello world program. Here is the code of it:</p>
 <div class="highlight"><pre>section .data
     msg db      &quot;hello, world!&quot;
 
@@ -193,38 +194,40 @@ _start:
 </pre></div>
 
 
-<p>Yes, it doesn't look like printf("Hello world"). Let's try to understand what is it and how it works. Take a look 1-2 lines. We defined data section and put there msg constant with Hello world value. Now we can use this constant in our code. Next is declaration text section and entry point of program. Program will start to execute from 7 line. Now starts the most interesting part. We already know what is it mov instruction, it gets 2 operands and put value of second to first. But what is it these rax, rdi and etc... As we can read in the wikipedia:</p>
+<p>Well, this doesn't look exactly like printf("Hello world"). Let's try to understand what is it and how it works. Take a look at lines one and two. We opened the data section and filled it with the constant msg containing the Hello world string. Now we can use this constant in our code. Next is the text section and the main entry point of our program. The program will start to execute from line 7 (just after the _start label). Now we are getting to the most interesting part: We already know the mov instruction - it gets two operands and moves the value of the second to the first - but what are rax, rdi, rsi and rdx? As we can read in wikipedia: </p>
 <div class="highlight"><pre>A central processing unit (CPU) is the hardware within a computer that carries out the instructions of a computer program by performing the basic arithmetical, logical, and input/output operations of the system.
 </pre></div>
 
 
-<p>Ok, CPU performs some operations, arithmetical and etc... But where can it get data for this operations? The first answer in memory. However, reading data from and storing data into memory slows down the processor, as it involves complicated processes of sending the data request across the control bus. Thus CPU has own internal memory storage locations called registers:</p>
+<p>Ok, so the CPU performs some operations, but where does it get the data for this operations from? The first answer is memory. However, reading data from and storing data into memory, slows down the processor significantly, as it involves sending the data request and the requested data across the control bus. Therefore a CPU always has a couple of small CPU-internal memory storage locations called registers:</p>
 <p><img alt="registers" src="http://i45.tinypic.com/10wtooh.png" /></p>
-<p>So when we write mov rax, 1, it means to put 1 to the rax register. Now we know what is it rax, rdi, rbx and etc... But need to know when to use rax but when rsi and etc...</p>
+<p>So <code>mov rax, 1</code> moves 1 to the rax register. This also applies to rdi, rsi and rdx, but there are also are some differences in usage between them:</p>
 <ul>
-<li><code>rax</code> - temporary register; when we call a syscal, rax must contain syscall number</li>
-<li><code>rdx</code> - used to pass 3rd argument to functions</li>
-<li><code>rdi</code> - used to pass 1st argument to functions</li>
-<li><code>rsi</code> - pointer used to pass 2nd argument to functions</li>
+<li><code>rax</code> - temporary register; when we execute a syscall, rax must contain the number of the syscall to be used</li>
+<li><code>rdx</code> - used to pass 3rd argument to subfunctions</li>
+<li><code>rdi</code> - used to pass 1st argument to subfunctions</li>
+<li><code>rsi</code> - pointer used to pass 2nd argument to subfunctions</li>
 </ul>
-<p>In another words we just make a call of <code>sys_write</code> syscall. Take a look on <code>sys_write</code>:</p>
+<p>In nother words we just call the <code>sys_write</code> syscall. Take a look at the definition of <code>sys_write</code>:</p>
 <div class="highlight"><pre><span class="kt">size_t</span> <span class="nf">sys_write</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">count</span><span class="p">);</span>
 </pre></div>
 
 
 <p>It has 3 arguments:</p>
 <ul>
-<li><code>fd</code> - file descriptor. Can be 0, 1 and 2 for standard input, standard output and standard error</li>
-<li><code>buf</code> - points to a character array, which can be used to store content obtained from the file pointed to by fd.</li>
-<li><code>count</code> - specifies the number of bytes to be written from the file into the character array</li>
+<li><code>fd</code> - a file descriptor: Can be 0, 1 and 2 for standard input, standard output and standard error,</li>
+<li><code>buf</code> - points to a character array (string), which contains the data to be written to the location associated with <code>fd</code>,</li>
+<li><code>count</code> - specifies the number of bytes (characters) from <code>buf</code> to be written to <code>fd</code>.</li>
 </ul>
-<p>So we know that <code>sys_write</code> syscall takes three arguments and has number one in syscall table. Let's look again to our hello world implementation. We put 1 to rax register, it means that we will use sys_write system call. In next line we put 1 to rdi register, it will be first argument of <code>sys_write</code>, 1 - standard output. Then we store pointer to msg at rsi register, it will be second buf argument for sys_write. And then we pass the last (third) parameter (length of string) to rdx, it will be third argument of sys_write. Now we have all arguments of the <code>sys_write</code> and we can call it with syscall function at 11 line. Ok, we printed "Hello world" string, now need to do correctly exit from program. We pass 60 to rax register, 60 is a number of exit syscall. And pass also 0 to rdi register, it will be error code, so with 0 our program must exit successfully. That's all for "Hello world". Quite simple :) Now let's build our program. For example we have this code in hello.asm file. Then we need to execute following commands:</p>
+<p>So now we know that the <code>sys_write</code> syscall takes three arguments and has number one in the syscall table. Let's look again at our little hello world program: We write 1 to <code>rax</code> (this means that we will use the <code>sys_write</code> system call), then we move 1 to <code>rdi</code> (the first argument of <code>sys_write</code>: <code>fd</code> = 1 - standard output). Then we store a pointer to <code>msg</code> in <code>rsi</code> (the second argument for <code>sys_write</code>: <code>buf</code>) and we pass the third and last parameter to <code>rdx</code> (the third argument of <code>sys_write</code>: <code>count</code> - the length of the string to be written). Now we set up all parameters for<code>sys_write</code> and we can call it with the syscall command at line 11. Great! This will print the string "hello, world!" to standard output. Now we only need to exit from the program. This is done by executing a system call after having moved 60 to <code>rax</code> (60 is the number of the exit syscall) and also passing 0 through <code>rdi</code> (the exit code), so with exit code 0 our program confirms to have executed successfully.</p>
+<p>That's all for our little "Hello world" program. Quite simple :)</p>
+<p>Now let's build our program. Say we have this code in a file called hello.asm. Then we need to execute following commands to make our program executable:</p>
 <div class="highlight"><pre><span class="nv">$ </span>nasm -f elf64 -o hello.o hello.asm
 <span class="nv">$ </span>ld -o hello hello.o
 </pre></div>
 
 
-<p>After it we will have executable hello file which we can run with ./hello and will see Hello world string in the terminal.</p>
+<p>We now have the executable (hello) which we can run (like this: ./hello) and will see the "hello, world!"-message misteriously appearing in our terminal... :)</p>
             </div>
             <!-- /.entry-content -->
             <div class="panel" style="font-family: 'Droid Sans';">
